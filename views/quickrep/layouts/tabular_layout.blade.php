@@ -6,7 +6,7 @@
 
     <link href='{{ asset("vendor/Owlookit/quickrep/core/font-awesome/css/all.min.css") }}' rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href='{{ $bootstrap_css_location }}' />
-    <link rel="stylesheet" type="text/css" href='{{ asset("vendor/Owlookit/quickrep/core/css/owlookitreportengine.report.css") }}' />
+    <link rel="stylesheet" type="text/css" href='{{ asset("vendor/Owlookit/quickrep/core/css/reportengine.report.css") }}' />
     <link rel="stylesheet" type="text/css" href='{{ asset("vendor/Owlookit/quickrep/quickrepbladetabular/datatables/datatables.min.css") }}' />
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
