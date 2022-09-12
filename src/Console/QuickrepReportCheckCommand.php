@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._ReportTestLog (
 		//see if we can manually set this..
 		//very unsure why this is not respecting the sql parameters from the /config/database.php mysql modes configuration... 
 		//still this does seem to work... and it forces the ONLY_FULL_GROUP_BY which is the big change that we are trying to account for (right now)
-		\DB::connection(config('database.statistics'))->statement("SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';");
+		\DB::connection(config('database.statistics'))->statement("SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';");
 
 		foreach($test_cases as $this_test_case){
 			
