@@ -41,9 +41,9 @@ class QuickrepReportCheckCommand extends Command
 
 	$is_debug = false;
 
-	$db_name = DB::connection()->getDatabaseName();
+	$db_name = DB::connection(config('database.statistics'))->getDatabaseName();
 
-	$pdo = DB::connection()->getPdo();
+	$pdo = DB::connection(config('database.statistics'))->getPdo();
 
 	$quickrep_cache_db_name = config( 'quickrep.QUICKREP_CACHE_DB' );
 
