@@ -143,18 +143,18 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         if ($includeSummary) {
             $target_fields = [];
             foreach ($fields as $field_name => $field) {
-                if ($field['Type'] == 'string') {
-                    $target_fields[] = "count(distinct(`{$field_name}`)) as `cnt_{$field_name}`";
-                } else if ($field['Type'] == 'integer' || $field['Type'] == 'decimal') {
-                    $target_fields[] = "sum(`{$field_name}`) as `sum_{$field_name}`";
-                    $target_fields[] = "avg(`{$field_name}`) as `avg_{$field_name}`";
-                    $target_fields[] = "std(`{$field_name}`) as `std_{$field_name}`";
-                    $target_fields[] = "min(`{$field_name}`) as `min_{$field_name}`";
-                    $target_fields[] = "max(`{$field_name}`) as `max_{$field_name}`";
-                } else if ($field['Type'] == 'date') {
-                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP(`{$field_name}`))) as `avg_{$field_name}`";
-                    $target_fields[] = "min(`{$field_name}`) as `min_{$field_name}`";
-                    $target_fields[] = "max(`{$field_name}`) as `max_{$field_name}`";
+                if ($field['type'] == 'string') {
+                    $target_fields[] = "count(distinct({$field_name})) as cnt_{$field_name}";
+                } else if ($field['type'] == 'integer' || $field['type'] == 'decimal') {
+                    $target_fields[] = "sum({$field_name}) as sum_{$field_name}";
+                    $target_fields[] = "avg({$field_name}) as avg_{$field_name}";
+                    $target_fields[] = "stddev({$field_name}) as std_{$field_name}";
+                    $target_fields[] = "min({$field_name}) as min_{$field_name}";
+                    $target_fields[] = "max({$field_name}) as max_{$field_name}";
+                } else if ($field['type'] == 'date') {
+                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP({$field_name}))) as avg_{$field_name}";
+                    $target_fields[] = "min({$field_name}) as min_{$field_name}";
+                    $target_fields[] = "max({$field_name}) as max_{$field_name}";
                 }
             }
             $target_fields = implode(",", $target_fields);
@@ -237,17 +237,17 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
             if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DETAIL)) {
                 $format[$name] = 'DETAIL';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array($fields[$name]["Type"], ["string"])) {
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array($fields[$name]["type"], ["string"])) {
                 $format[$name] = 'URL';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->CURRENCY) /* && in_array($fields[$name]["Type"],["integer","decimal"])*/) {
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->CURRENCY) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
                 $format[$name] = 'CURRENCY';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->NUMBER) /* && in_array($fields[$name]["Type"],["integer","decimal"])*/) {
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->NUMBER) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
                 $format[$name] = 'NUMBER';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DECIMAL) /* && in_array($fields[$name]["Type"],["integer","decimal"])*/) {
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DECIMAL) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
                 $format[$name] = 'DECIMAL';
-            } else if (in_array($fields[$name]["Type"], ["date", "time", "datetime"])) {
-                $format[$name] = strtoupper($fields[$name]["Type"]);
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->PERCENT) /* && in_array($fields[$name]["Type"],["integer","decimal"])*/) {
+            } else if (in_array($fields[$name]["type"], ["date", "time", "datetime"])) {
+                $format[$name] = strtoupper($fields[$name]["type"]);
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->PERCENT) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
                 $format[$name] = 'PERCENT';
             }
 

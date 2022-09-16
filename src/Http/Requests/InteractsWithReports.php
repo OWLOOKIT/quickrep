@@ -39,14 +39,14 @@ trait InteractsWithReports
         // report_key is a request parameter defined by the route (we are inside a request object)
         return tap(Quickrep::reportForKey($this->report_key), function ($report) {
             if(is_null($report)){
-			$debug = config('app.debug');
-			if($debug){ //lets show the user a specific error
-				throw new \ErrorException("Quickrep returned a null value when trying to create a report from key |$this->report_key| this usually means there is no existing report by that name");
-			}else{
-				//in a production environment, we just show a 404 message
-				abort(404);
-			}
-		}
+                $debug = config('app.debug');
+                if($debug){ //lets show the user a specific error
+                    throw new \ErrorException("Quickrep returned a null value when trying to create a report from key |$this->report_key| this usually means there is no existing report by that name");
+                }else{
+                    //in a production environment, we just show a 404 message
+                    abort(404);
+                }
+            }
         });
     }
 

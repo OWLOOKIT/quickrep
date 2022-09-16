@@ -33,9 +33,10 @@ class QuickrepDatabase
             'password' => config( "database.connections.$default.password" ),
         ] );
 
+        // @TODO: make a MySQL fallback
         // Set the max concat length for cache DB to be A LOT
         // This will also throw an exception if the DB doesn't exist
-        DB::connection($database)->statement(DB::raw("SET SESSION group_concat_max_len = 1000000;"));
+        // DB::connection($database)->statement(DB::raw("SET SESSION group_concat_max_len = 1000000;"));
     }
 
     public static function hasTable( $table_name, $connectionName )
@@ -120,10 +121,28 @@ class QuickrepDatabase
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
             try {
-                $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
+                // @TODO: test a MySQL fallback
+                if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+                    $query = <<<SQL
+                            do
+                            $$
+                            declare
+                              l_rec record;
+                            begin
+                              for l_rec in (select foreign_table_schema, foreign_table_name 
+                                            from information_schema.foreign_tables) loop
+                                 execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
+                              end loop;
+                                IMPORT FOREIGN SCHEMA public FROM SERVER app_server INTO public;
+                            end;
+                            $$
+SQL;
+                } else {
+                    $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
+                }
                 DB::connection(config('database.statistics'))->statement( $query );
             } catch ( \Exception $e ) {
-                $default = config( 'database.default' ); // Get default connection
+                $default = config( 'database.statistics' ); // Get default connection
                 $username = config( "database.connections.$default.username" ); // Get username for default connection
                 $message = "\n\nYou may not have permission to the database `$database` to query its existence.";
                 $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
@@ -194,18 +213,30 @@ class QuickrepDatabase
      */
     public static function getTableColumnDefinition( $table_name, $connectionName ): array
     {
-        $result = self::connection($connectionName)->select("SHOW COLUMNS FROM {$table_name}");
+        // @TODO: make a MySQL fallback
+        // $query = "SHOW COLUMNS FROM {$table_name}";
+        $table_name = strtolower($table_name);
+        $query = <<<SQL
+                    SELECT *
+                      FROM information_schema.columns
+                     WHERE table_schema = 'public'
+                       AND table_name   = '{$table_name}';
+SQL;
+        $result = self::connection($connectionName)->select($query);
         if ($result) {
             $column_meta = [];
             foreach ($result as $column) {
-            $column_meta[$column->Field] = [
-                    'Name' => $column->Field,
-                    'Type' => self::basicTypeFromNativeType($column->Type),
+            $column_meta[$column->column_name] = [
+//                    'Name' => $column->Field,
+//                    'Type' => self::basicTypeFromNativeType($column->Type),
+                    'name' => $column->column_name,
+                    'type' => self::basicTypeFromNativeType($column->data_type),
                 ];
             }
         } else {
             throw new \Exception("Could not execute `SHOW COLUMNS FROM {$table_name}`");
         }
+
         return $column_meta;
     }
 

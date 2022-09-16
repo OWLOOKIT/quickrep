@@ -35,7 +35,7 @@ class AbstractGenerator
                 $this->cache->getTable()->where(function($q) use($fields,$urldecodedvalue)
                 {
                     foreach ($fields as $field) {
-                        $field_name = $field['Name'];
+                        $field_name = $field['name'];
                         $q->orWhere($field_name, 'LIKE', '%' . $urldecodedvalue . '%');
                     }
                 });

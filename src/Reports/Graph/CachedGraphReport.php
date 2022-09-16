@@ -195,9 +195,9 @@ class CachedGraphReport extends DatabaseCache
         // These are the columns of the table to treat as Nodes and Links
 
         // Look at each field in our GetSQL() result table, and get all of our node types and link types, and
-        // TODO Do some validation to make sure all of our nodes and links columns are actually in the table
+        // TODO: Do some validation to make sure all of our nodes and links columns are actually in the table
         foreach ($fields as $field) {
-            $column = $field['Name'];
+            $column = $field['name'];
             $title = ucwords(str_replace('_', ' ', $column), "\t\r\n\f\v ");
             if (QuickrepDatabase::isColumnInKeyArray($column, $this->getReport()->getNodeTypeColumns())) {
                 $subjects_found[] = $column;

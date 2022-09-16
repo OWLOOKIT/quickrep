@@ -56,7 +56,7 @@ class DatabaseCache
             $this->setDoClearCache($clear_cache);
 
             // Generate the prefix, but make sure it's not longer than 32 chars
-            $this->key = $this->keygen($this->report->getClassName());
+            $this->key = $this->keygen(strtolower($this->report->getClassName()));
             $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
 
             if ($this->exists() === false ||
@@ -76,7 +76,6 @@ class DatabaseCache
             throw new InvalidDatabaseTableException("You attempted access a table `{$this->getTableName()}` on database `{$this->connectionName}` but the table does not exist or you do not have permission to access it");
         }
 
-        return true;
     }
 
     public function getConnectionName()
@@ -226,19 +225,18 @@ class DatabaseCache
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
                     if ($index == 0) {
                         //for the first query, we use a CREATE TABLE statement
-                        QuickrepDatabase::connection($this->connectionName)->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
+                        QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
-			try {
-                        	QuickrepDatabase::connection($this->connectionName)->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
+                    try {
+                        QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
+                    } catch(\Illuminate\Database\QueryException $ex){
 
-			} catch(\Illuminate\Database\QueryException $ex){
-
-
-				//these database errors deserve better human readable responses...
-				//they are common problems with Quickrep reports..
-				//so lets catch them and make sure that they are clear to end users..
-				$messages_to_filter = [
+        
+                        //these database errors deserve better human readable responses...
+                        //they are common problems with Quickrep reports..
+                        //so lets catch them and make sure that they are clear to end users..
+                        $messages_to_filter = [
 
 				'Insert value list does not match column list:' =>
 "Quickrep Error: SQL Column Number Mismatch. 
@@ -251,26 +249,26 @@ It should not be that way, but it is...
 The specific error message from the database was: 
 ",
 
-				];
-
-
-				$original_message = $ex->getMessage();
-
-				foreach($messages_to_filter as $find_me => $say_me){
-
-					if(strpos($original_message,$find_me) !== false){
-
-						$new_message = $say_me . $original_message;
-						throw new \Exception($new_message);
-
-					}
-				}
-
-				//if we get here then it is an "original" SQL error message..
-				//no new information to add here... lets just re throw the original error
-				throw $ex;
-
-			}
+                        ];
+        
+        
+                        $original_message = $ex->getMessage();
+        
+                        foreach($messages_to_filter as $find_me => $say_me){
+        
+                            if(strpos($original_message,$find_me) !== false){
+        
+                                $new_message = $say_me . $original_message;
+                                throw new \Exception($new_message);
+        
+                            }
+                        }
+        
+                        //if we get here then it is an "original" SQL error message..
+                        //no new information to add here... lets just re throw the original error
+                        throw $ex;
+        
+                    }
 
                     }
                 } else {
@@ -319,13 +317,19 @@ The specific error message from the database was:
      */
     public function getLastGenerated()
     {
-        $stats = DB::connection(config('database.statistics'))->select("SELECT CURRENT_TIMESTAMP, CREATE_TIME,
-                                    TIMESTAMPDIFF(MINUTE,CREATE_TIME, CURRENT_TIMESTAMP) as age
-                                FROM information_schema.tables WHERE table_schema=? and table_name = ?", [$this->connectionName, $this->getTableName()]);
+// TODO: make Postgres/MySQL fallbacks for CREATE_TIME
+//        $stats = DB::connection(config('database.statistics'))->select("SELECT CURRENT_TIMESTAMP, CREATE_TIME,
+//                                    TIMESTAMPDIFF(MINUTE,CREATE_TIME, CURRENT_TIMESTAMP) as age
+//                                FROM information_schema.tables WHERE table_schema=? and table_name = ?", [$this->connectionName, $this->getTableName()]);
 
-        if (!$stats) {
-            return true;
-        }
+//        $stats = DB::connection(config('database.statistics'))->select("SELECT CURRENT_TIMESTAMP, CREATE_TIME,
+//                                    TIMESTAMPDIFF(MINUTE,CREATE_TIME, CURRENT_TIMESTAMP) as age
+//                                FROM information_schema.tables WHERE table_schema=? and table_name = ?", [$this->connectionName, $this->getTableName()]);
+//
+//        if (!$stats) {
+            $carbonTime = Carbon::now()->toDateTimeString();
+            return $carbonTime;
+//        }
 
         $tz = DB::connection(config('database.statistics'))->select('SELECT TIME_FORMAT( TIMEDIFF(NOW(), UTC_TIMESTAMP), "%H:%i" ) as TZ;');
 
@@ -338,8 +342,10 @@ The specific error message from the database was:
         }
 
         $carbonTime = Carbon::createFromFormat('Y-m-d H:i:s', $time, $offset);
+
         $carbonTime->setTimezone(config('app.timezone'));
         $lastGeneratedTime = $carbonTime->toDateTimeString();
+
         return $lastGeneratedTime;
     }
 

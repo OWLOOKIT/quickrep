@@ -763,7 +763,7 @@ JS;
                 if(!is_array($sql)){
                         $sql = [$sql]; //make it an array..
                 }
-                $identity_string =      $this->getClassName() . '-' .
+                $identity_string =      strtolower($this->getClassName()) . '-' .
                                         $this->getCode() . '-' . //note that we do this just to make table and directory listings easier to read.. the data is fully captured in the SQL
                                         implode('-',$sql);	//which is why we do not need to add paramaters (etc) to this identity function...
 
