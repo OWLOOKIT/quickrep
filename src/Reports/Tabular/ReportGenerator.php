@@ -42,11 +42,11 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
         // convert stdClass to array
         $data_row = [];
-	if(!is_null($first_row_of_data)){
-        	foreach ($first_row_of_data as $key => $value) {
-            		$data_row[$key] = $value;  //MapRow needs  at least one row of real data to function properly...
-       		}
-	}
+        if(!is_null($first_row_of_data)){
+            foreach ($first_row_of_data as $key => $value) {
+                $data_row[$key] = $value;  //MapRow needs  at least one row of real data to function properly...
+            }
+        }
 
         $has_data = true;
         if(count($data_row) == 0) {
@@ -61,8 +61,8 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
          */
         $first_row_num = 0;
         if ( $has_data ) { //this means that the first row had results..
-		//but here we are not sure if MapRow might change column names or add columns or even delete columns..
-		//so we have to run it on the first row of actual data and then see what columns come back..
+            //but here we are not sure if MapRow might change column names or add columns or even delete columns..
+            //so we have to run it on the first row of actual data and then see what columns come back..
             $data_row = $this->cache->MapRow( $data_row, $first_row_num );
             $mapped_header = array_keys( $data_row );
         }
@@ -71,14 +71,14 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         This makes sure no new columns were added or removed.
          */
         if (count($original_array_key) != count($mapped_header)) {
-		if (count($original_array_key) < count($mapped_header)){
-			$diff = array_diff($mapped_header,$original_array_key);
-			$diff_text = var_export($diff,true);
-			$original_text = var_export($original_array_key,true);
-            		throw new UnexpectedMapRowException("Quickrep Report Error: There are more values returned in the row than went into MapRow. These field names have been added:  $diff_text, was expecting $original_text");
-		}else{
-            		throw new UnexpectedMapRowException("Quickrep Report Error: There are fewer values returned in the row than went into MapRow");
-		}
+            if (count($original_array_key) < count($mapped_header)){
+                $diff = array_diff($mapped_header,$original_array_key);
+                $diff_text = var_export($diff,true);
+                $original_text = var_export($original_array_key,true);
+                throw new UnexpectedMapRowException("Quickrep Report Error: There are more values returned in the row than went into MapRow. These field names have been added:  $diff_text, was expecting $original_text");
+            }else{
+                throw new UnexpectedMapRowException("Quickrep Report Error: There are fewer values returned in the row than went into MapRow");
+            }
         }
 
 
@@ -152,7 +152,9 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
                     $target_fields[] = "min({$field_name}) as min_{$field_name}";
                     $target_fields[] = "max({$field_name}) as max_{$field_name}";
                 } else if ($field['type'] == 'date') {
-                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP({$field_name}))) as avg_{$field_name}";
+                    // @TODO: make a Postgres fallback
+//                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP({$field_name}))) as avg_{$field_name}";
+//                    $target_fields[] = "extract(epoch from (avg(to_timestamp({$field_name})))) as avg_{$field_name}";
                     $target_fields[] = "min({$field_name}) as min_{$field_name}";
                     $target_fields[] = "max({$field_name}) as max_{$field_name}";
                 }
