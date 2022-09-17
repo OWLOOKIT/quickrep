@@ -160,7 +160,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
                 }
             }
             $target_fields = implode(",", $target_fields);
-            $ResultTable = clone $this->cache->getTable();
+            $ResultTable = clone $this->cache->getTable()->reorder();
             $result = $ResultTable->selectRaw($target_fields)->first();
 
             /*
