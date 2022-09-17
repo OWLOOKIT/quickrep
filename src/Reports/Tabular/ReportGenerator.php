@@ -39,6 +39,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
         // Get the column names and their types (column definitions) directly from the database
         $fields = $this->cache->getColumns();
+        $fieldsI18n = $this->cache->getColumns();
 
         // convert stdClass to array
         $data_row = [];
@@ -88,7 +89,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
          */
         $header_format = array_combine($mapped_header, array_fill(0, count($mapped_header), null));
         $header_tags = array_combine($mapped_header, array_fill(0, count($mapped_header), null));
-
+        $header_I18n = array_combine($mapped_header, array_fill(0, count($mapped_header), null));
 
         /*
         Determine the header format based on the column title and type
@@ -99,7 +100,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         Override the default header with what the report gives back,
         then check to see if the format and tags are valid
          */
-        $this->cache->OverrideHeader($header_format, $header_tags);
+        $this->cache->OverrideHeader($header_format, $header_tags, $header_I18n);
 
         foreach ($header_format as $name => $format) {
             if (!in_array($name, $mapped_header)) {
@@ -197,11 +198,16 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         Merge format/tags/summary information together into 1 array
          */
         $header = [];
+        if (!config('app.locales')) {
+            $error = "The requested Quickrep Report needs app.locales config settings";
+            throw new Exception($error);
+        }
         foreach ($header_format as $name => $field) {
             $title = ucwords(str_replace('_', ' ', $name), "\t\r\n\f\v ");
             $column = [
                 'field' => $name,
                 'title' => $title,
+                'title_I18n' => $header_I18n[$name] ?? array_fill_keys(config('app.locales'), $title),
                 'format' => $header_format[$name] ?? 'TEXT',
                 'tags' => $header_tags[$name] ?? [],
             ];

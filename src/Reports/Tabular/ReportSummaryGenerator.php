@@ -19,7 +19,9 @@ class ReportSummaryGenerator extends ReportGenerator implements GeneratorInterfa
     {
         return [
             'Report_Name' => $this->cache->getReport()->GetReportName(),
+            'Report_Name_I18n' => $this->cache->getReport()->GetReportNameI18n(),
             'Report_Description' => $this->cache->getReport()->GetReportDescription(),
+            'Report_Description_I18n' => $this->cache->getReport()->GetReportDescriptionI18n(),
             'selected-data-option' => $this->cache->getReport()->getParameter( 'data-option' ),
             'columns' => $this->runSummary(),
             'cache_meta_generated_this_request' => $this->cache->getGeneratedThisRequest(),

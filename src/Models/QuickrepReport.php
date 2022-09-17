@@ -575,9 +575,10 @@ abstract class QuickrepReport implements QuickrepReportInterface
 	 *
 	 * @param array &$format
 	 * @param array &$tags
+	 * @param ?array &I18n
 	 * @return void
 	 */
-	public function OverrideHeader(array &$format, array &$tags): void
+	public function OverrideHeader(array &$format, array &$tags, ?array &$I18n): void
 	{
 		//doing nothing is the default
 	}
@@ -597,6 +598,24 @@ abstract class QuickrepReport implements QuickrepReportInterface
                 throw new Exception($error);
 	}
 	/**
+	 * GetReportName
+	 * Return the name of the report,
+         * This function must be defined in the called class
+	 *
+	 * @return void
+	 */
+	public function GetReportNameI18n(): ?array
+	{
+		//this function should have been overridden by a child class (i.e. a specific report) if this is being called
+		//then the child report is missing the GetReportNameI18n() function, it returns an accociative array of existing locales filled by default name values
+		if (config('app.locales')) {
+			return array_fill_keys(config('app.locales'), $this->GetReportName());
+		}
+		$error = "The requested Quickrep Report needs app.locales config settings";
+		throw new Exception($error);
+
+	}
+	/**
 	 * GetReportDescription
 	 * Return the description of the report,
 	 * By default, this will return the const $DESCRIPTION.
@@ -611,6 +630,26 @@ abstract class QuickrepReport implements QuickrepReportInterface
                 //then the child report is missing the GetReportDescription() function, which is one of the few required functions.
                 $error = "The requested Quickrep Report class exists, but does not have the GetReportDescription() function defined, this is a required function";
                 throw new Exception($error);
+	}
+
+	/**
+	 * GetReportDescriptionI18n
+	 * Return the description of the report,
+	 * By default, this will return the const $DESCRIPTION.
+	 * This function can be used to change the report description based on $code,$parameters,$input
+	 * This supports returning HTML
+	 *
+	 * @return string
+	 */
+	public function GetReportDescriptionI18n(): ?array
+	{
+		//this function should have been overridden by a child class (i.e. a specific report) if this is being called
+		//then the child report is missing the GetReportDescriptionI18n() function, it returns an accociative array of existing locales filled by default description values
+		if (config('app.locales')) {
+			return array_fill_keys(config('app.locales'), $this->GetReportDescription());
+		}
+		$error = "The requested Quickrep Report needs app.locales config settings";
+		throw new Exception($error);
 	}
 
     	/**
