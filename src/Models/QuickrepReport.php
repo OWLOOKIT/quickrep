@@ -578,7 +578,7 @@ abstract class QuickrepReport implements QuickrepReportInterface
 	 * @param ?array &I18n
 	 * @return void
 	 */
-	public function OverrideHeader(array &$format, array &$tags, ?array &$I18n): void
+	public function OverrideHeader(array &$format, array &$tags, ?array &$I18n = []): void
 	{
 		//doing nothing is the default
 	}
