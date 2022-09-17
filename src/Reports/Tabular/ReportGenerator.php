@@ -39,7 +39,6 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
         // Get the column names and their types (column definitions) directly from the database
         $fields = $this->cache->getColumns();
-        $fieldsI18n = $this->cache->getColumns();
 
         // convert stdClass to array
         $data_row = [];
