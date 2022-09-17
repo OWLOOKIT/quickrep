@@ -102,7 +102,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $this->cache->OverrideHeader($header_format, $header_tags, $header_I18n);
 
         foreach ($header_format as $name => $format) {
-            if (!in_array($name, $mapped_header)) {
+            if ($mapped_header && !in_array($name, $mapped_header)) {
                 throw new UnexpectedHeaderException("Quickrep Report Error: Column header not found: {$name}");
             }
 
@@ -113,7 +113,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         }
 
         foreach ($header_tags as $name => &$tags) {
-            if (!in_array($name, $mapped_header)) {
+            if ($mapped_header && !in_array($name, $mapped_header)) {
                 throw new UnexpectedHeaderException("Quickrep Report Error: Column header not found: {$name}");
             }
 
