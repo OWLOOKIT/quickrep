@@ -148,7 +148,7 @@ class DatabaseCache
         return $this->report->MapRow($row, $row_number);
     }
 
-    public function OverrideHeader(array &$format, array &$tags, ?array &$I18n): void
+    public function OverrideHeader(array &$format, array &$tags, ?array &$I18n = []): void
     {
         $this->report->OverrideHeader($format, $tags, $I18n);
     }
