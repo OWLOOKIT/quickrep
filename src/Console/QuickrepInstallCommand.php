@@ -254,10 +254,13 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
 
         DB::connection(config('database.statistics'))->statement(DB::connection(config('database.statistics'))->raw(<<<SQL
-SELECT
-  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
-from
-  pg_tables WHERE schemaname = 'public';
+DO $$ DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
 SQL));
 
         // Write the database name to the master config
@@ -277,10 +280,13 @@ SQL));
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
 
         DB::connection(config('database.statistics'))->statement( DB::connection()->raw( <<<SQL
-SELECT
-  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
-from
-  pg_tables WHERE schemaname = 'public';
+DO $$ DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
 SQL ) );
 
         // Write the database name to the master config

@@ -122,35 +122,18 @@ class QuickrepDatabase
 //            $db[0]->SCHEMA_NAME == $database // @TODO: test a MySQL fallback
         ) {
             $db_exists = true;
-
-            // @TODO: test a MySQL fallback
-            if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
-                $query = <<<SQL
-do
-$$
-declare
-  l_rec record;
-begin
-  for l_rec in (select foreign_table_schema, foreign_table_name 
-                from information_schema.foreign_tables) loop
-     execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
-  end loop;
-    IMPORT FOREIGN SCHEMA public EXCEPT (migrations) FROM SERVER app_server INTO public;
-end;
-$$
-SQL;
-                DB::connection(config('database.statistics'))->statement($query);
-            }
-
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
             try {
                 if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
                     $query = <<<SQL
-SELECT
-  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
-from
-  pg_tables WHERE schemaname = 'public';
+DO $$ DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
 SQL;
                 } else {
                     $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
@@ -164,6 +147,24 @@ SQL;
                 $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$database`.* TO '$username'@'localhost';\n";
                 throw new \Exception($e->getMessage().$message, (int) $e->getCode());
             }
+        }
+
+        if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+            $query = <<<SQL
+do
+$$
+declare
+  l_rec record;
+begin
+  for l_rec in (select foreign_table_schema, foreign_table_name 
+                from information_schema.foreign_tables) loop
+     execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
+  end loop;
+    IMPORT FOREIGN SCHEMA public EXCEPT (migrations) FROM SERVER app_server INTO public;
+end;
+$$
+SQL;
+            DB::connection(config('database.statistics'))->statement($query);
         }
 
         if ($db_exists) {
