@@ -57,6 +57,7 @@ class TabularApiController extends AbstractApiController
         $reportGenerator = new ReportGenerator( $cache );
         $collection = $reportGenerator->getCollection();
 
+        // @TODO: refactor types
         $reportDescription = $report->GetReportDescriptionI18n()[$lang];
 
         // File name download should include MD5 from the contents of getCode #48

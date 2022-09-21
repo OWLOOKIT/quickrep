@@ -201,7 +201,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
             $default = config( 'database.statistics' );
             $username = config( "database.connections.$default.username" );
-            $message .= "You are trying to connect with mysql user `$username`, you may have to run the following commands:\n";
+            $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
             $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_cache`.* TO '$username'@'localhost';\n";
 
             $this->error($message);
@@ -230,14 +230,14 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
             $default = config( 'database.statistics' );
             $username = config( "database.connections.$default.username" );
-            $message .= "You are trying to connect with mysql user `$username`, you may have to run the following commands:\n";
+            $message .= "You are trying to connect with dB1 user `$username`, you may have to run the following commands:\n";
             $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_config`.* TO '$username'@'localhost';";
 
             $this->error($message);
             exit();
         }
 
-        Artisan::call('quickrep:debug', [], $this->getOutput());
+//        Artisan::call('quickrep:debug', [], $this->getOutput());
 
         $this->info("Done.");
 
@@ -247,11 +247,18 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
     public function runQuickrepInitialCacheMigration( $quickrep_cache_db_name )
     {
         // Create the database
-        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_cache_db_name ) ) {
-            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_cache_db_name . ";" ) );
-        }
+//        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_cache_db_name ) ) {
+//            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_cache_db_name . ";" ) );
+//        }
+//
+//        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
+        DB::connection(config('database.statistics'))->statement(DB::connection(config('database.statistics'))->raw(<<<SQL
+SELECT
+  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
+from
+  pg_tables WHERE schemaname = 'public';
+SQL));
 
         // Write the database name to the master config
         config( ['quickrep.QUICKREP_CACHE_DB' => $quickrep_cache_db_name ] );
@@ -263,11 +270,18 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
     public function runQuickrepInitialConfigMigration( $quickrep_config_db_name )
     {
         // Create the database
-        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_config_db_name ) ) {
-            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_config_db_name . ";" ) );
-        }
+//        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_config_db_name ) ) {
+//            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_config_db_name . ";" ) );
+//        }
+//
+//        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
+        DB::connection(config('database.statistics'))->statement( DB::connection()->raw( <<<SQL
+SELECT
+  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
+from
+  pg_tables WHERE schemaname = 'public';
+SQL ) );
 
         // Write the database name to the master config
         config( ['quickrep.QUICKREP_CONFIG_DB' => $quickrep_config_db_name ] );

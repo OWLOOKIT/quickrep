@@ -69,11 +69,13 @@ class QuickrepDatabase
      */
     public static function doesDatabaseExist( $database )
     {
-        $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME =  ?";
+        // @TODO: MySQL fallback
+//        $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME =  ?";
+        $query = "SELECT datname FROM pg_database WHERE datname = ?";
 
         // In case the database in the database.php or .env file doesn't exist, we can safely
         // set this to null so the select call will work, otherwise, we get a mysterious error
-	$previous_mysql_database = config('database.connections.mysql.database');
+//	$previous_mysql_database = config('database.connections.appstats.database');
 //        config(["database.connections.mysql.database" => null]);
 
         try {
@@ -108,15 +110,17 @@ class QuickrepDatabase
             $db = null;
         }
 
-	//now that this is done, lets restore the previous database
-//       config(["database.connections.mysql.database" => $previous_mysql_database]);
+        //now that this is done, lets restore the previous database
+//       config(["database.connections.appstats.database" => $previous_mysql_database]);
 
 
         // The DB exists if the schema name in the query matches our database
         $db_exists = false;
         if ( is_array($db) &&
             isset($db[0]) &&
-            $db[0]->SCHEMA_NAME == $database) {
+            $db[0]->datname == $database
+//            $db[0]->SCHEMA_NAME == $database // @TODO: test a MySQL fallback
+        ) {
             $db_exists = true;
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
@@ -226,7 +230,7 @@ SQL;
         if ($result) {
             $column_meta = [];
             foreach ($result as $column) {
-            $column_meta[$column->column_name] = [
+                $column_meta[$column->column_name] = [
 //                    'Name' => $column->Field,
 //                    'Type' => self::basicTypeFromNativeType($column->Type),
                     'name' => $column->column_name,
