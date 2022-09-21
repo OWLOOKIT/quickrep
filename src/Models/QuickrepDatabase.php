@@ -122,24 +122,35 @@ class QuickrepDatabase
 //            $db[0]->SCHEMA_NAME == $database // @TODO: test a MySQL fallback
         ) {
             $db_exists = true;
+
+            // @TODO: test a MySQL fallback
+            if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+                $query = <<<SQL
+do
+$$
+declare
+  l_rec record;
+begin
+  for l_rec in (select foreign_table_schema, foreign_table_name 
+                from information_schema.foreign_tables) loop
+     execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
+  end loop;
+    IMPORT FOREIGN SCHEMA public EXCEPT (migrations) FROM SERVER app_server INTO public;
+end;
+$$
+SQL;
+                DB::connection(config('database.statistics'))->statement($query);
+            }
+
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
             try {
-                // @TODO: test a MySQL fallback
                 if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
                     $query = <<<SQL
-                            do
-                            $$
-                            declare
-                              l_rec record;
-                            begin
-                              for l_rec in (select foreign_table_schema, foreign_table_name 
-                                            from information_schema.foreign_tables) loop
-                                 execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
-                              end loop;
-                                IMPORT FOREIGN SCHEMA public FROM SERVER app_server INTO public;
-                            end;
-                            $$
+SELECT
+  'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
+from
+  pg_tables WHERE schemaname = 'public';
 SQL;
                 } else {
                     $query = "CREATE DATABASE IF NOT EXISTS `$database`;";

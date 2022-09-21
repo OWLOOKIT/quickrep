@@ -230,7 +230,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
             $default = config( 'database.statistics' );
             $username = config( "database.connections.$default.username" );
-            $message .= "You are trying to connect with dB1 user `$username`, you may have to run the following commands:\n";
+            $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
             $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_config`.* TO '$username'@'localhost';";
 
             $this->error($message);
