@@ -28,9 +28,14 @@ class AbstractGenerator
     {
         foreach($filters as $field=>$value)
         {
+            if ((is_array($value))) {
+                $this->cache->getTable()->whereBetween($field, $value);
+                continue;
+            }
+
             $urldecodedvalue =urldecode($value);
-            if($field == '_')
-            {
+
+            if ($field === '_') {
                 $fields = QuickrepDatabase::getTableColumnDefinition( $this->cache->getTableName(), quickrep_cache_db() );
                 $this->cache->getTable()->where(function($q) use($fields,$urldecodedvalue)
                 {
@@ -39,8 +44,7 @@ class AbstractGenerator
                         $q->orWhere($field_name, 'LIKE', '%' . $urldecodedvalue . '%');
                     }
                 });
-            } else
-            {
+            } else  {
                 $this->cache->getTable()->Where($field,'LIKE','%'.$urldecodedvalue.'%');
             }
         }
