@@ -29,6 +29,11 @@ class AbstractGenerator
         foreach($filters as $field=>$value)
         {
             if ((is_array($value))) {
+                if ($value[1] === 'null') {
+                    // fallback in case of the single param had been set
+                    $this->cache->getTable()->where($field, '>=', $value[0]);
+                    continue;
+                }
                 $this->cache->getTable()->whereBetween($field, $value);
                 continue;
             }
