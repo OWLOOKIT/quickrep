@@ -135,6 +135,7 @@ BEGIN
     END LOOP;
 END $$;
 SQL;
+                    $db_exists = true;
                 } else {
                     $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
                 }
