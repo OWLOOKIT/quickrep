@@ -48,7 +48,7 @@ abstract class AbstractWebController extends BaseController
     /**
      * @return string
      *
-     * Read the API prefix like `zapi` from the quickrep config fil
+     * Read the API prefix like `qrapi` from the quickrep config fil
      */
     public function getApiPrefix()
     {
@@ -85,7 +85,7 @@ abstract class AbstractWebController extends BaseController
             }
         }
 
-        // Get the overall Quickrep API prefix /zapi
+        // Get the overall Quickrep API prefix /qrapi
         $report->pushViewVariable('api_prefix', $this->getApiPrefix());
 
         // Get the API prefix for this report's controller from child controller

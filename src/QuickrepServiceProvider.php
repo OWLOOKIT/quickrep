@@ -201,7 +201,7 @@ Class QuickrepServiceProvider extends \Illuminate\Support\ServiceProvider
             'namespace' => 'Owlookit\Quickrep\Http\Controllers',
             'domain' => config('quickrep.domain', null),
             'as' => 'quickrep.api.',
-            'prefix' => config( 'quickrep.API_PREFIX', 'zapi' ),
+            'prefix' => config( 'quickrep.API_PREFIX', 'qrapi' ),
             'middleware' => $middleware,
         ];
     }

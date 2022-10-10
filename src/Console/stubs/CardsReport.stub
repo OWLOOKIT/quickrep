@@ -162,7 +162,7 @@ FROM information_schema.COLUMNS
    }
 
     /**
-    * This function will determine if replacing /QuickrepCard/ with /ZeremeloSQL/ will show the SQL of the report
+    * This function will determine if replacing /QuickrepCard/ with /QuickrepSQL/ will show the SQL of the report
     * for security reasons it should be off by default.
     */
    public function isSQLPrintEnabled(): bool{

@@ -123,7 +123,7 @@ abstract class QuickrepReport implements QuickrepReportInterface
 		 *
 		 * This enables the sql print feature for this report, which enables the route
 		 * for printing the SQL that generates a report. There is also a global
-		 * configuration quickrep.SQL_PRINT_ENABLE in the zeremelo config file which also
+		 * configuration quickrep.SQL_PRINT_ENABLE in the Quickrep config file which also
 		 * needs to be enabled FIRST if you want to enable on the report level.
 		 */
     	protected $SQL_PRINT_ENABLED = false;

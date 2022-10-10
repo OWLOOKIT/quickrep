@@ -172,7 +172,7 @@ WHERE TABLE_SCHEMA != 'mysql' AND TABLE_SCHEMA != 'information_schema'
    }
 
     /**
-    * This function will determine if replacing /Quickrep/ with /ZeremeloSQL/ will show the SQL of the report
+    * This function will determine if replacing /Quickrep/ with /QuickrepSQL/ will show the SQL of the report
     * for security reasons it should be off by default. 
     */
    public function isSQLPrintEnabled(): bool{

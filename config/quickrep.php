@@ -13,7 +13,7 @@ return [
 
     /**
      * If the api route has a prefix, use this prefix when pre-pend to the uri
-     * By default, laravel uses the zapi prefix so that it doesn't conflict with existing APIs
+     * By default, laravel uses the qrapi prefix so that it doesn't conflict with existing APIs
      */
     'API_PREFIX'=>env("API_PREFIX","qrapi"),
 
