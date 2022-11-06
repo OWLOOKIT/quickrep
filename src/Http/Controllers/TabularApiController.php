@@ -99,7 +99,6 @@ class TabularApiController extends AbstractApiController
             'Content-Description' => 'File Transfer',
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="'.urlencode($filename).'"',
-            'Content-Type' => 'application/octet-stream',
             'Expires' => '0',
             'Cache-Control' => 'must-revalidate',
             'Pragma' => 'public'
@@ -182,17 +181,17 @@ class TabularApiController extends AbstractApiController
                     ],
                 ],
             ];
-            $sheet->getStyle([1, 1, sizeof($header), 1])->applyFromArray($styleArray);
+            $sheet->getStyle([1, 1, count($header), 1])->applyFromArray($styleArray);
 
-            for ($i = 0, $l = sizeof($header); $i < $l; $i++) {
+            for ($i = 0, $l = count($header); $i < $l; $i++) {
                 $sheet->setCellValueByColumnAndRow($i + 1, 1, $header[$i]);
                 $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
             }
 
-            for ($i = 0, $l = sizeof($collection); $i < $l; $i++) { // row $i
+            for ($i = 0, $l = count($collection); $i < $l; $i++) { // row $i
                 $j = 0;
                 foreach ($collection[$i] as $k => $v) { // column $j
-                    $sheet->setCellValueByColumnAndRow($j + 1, ($i + 1 + 1), $v);
+                    $sheet->setCellValueByColumnAndRow($j + 1, ($i + 1 + 1), trim(strip_tags($v)));
                     $j++;
                 }
             }
