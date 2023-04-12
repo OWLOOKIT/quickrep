@@ -151,6 +151,8 @@ SQL;
         }
 
         if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+            # @TODO: refactor this to avoid deadlocks
+            # https://stackoverflow.com/questions/40728788/drop-foreign-schema-in-postgresql-using-a-foreign-data-wrapper
             $query = <<<SQL
 do
 $$
@@ -161,7 +163,7 @@ begin
                 from information_schema.foreign_tables) loop
      execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
   end loop;
-    IMPORT FOREIGN SCHEMA public EXCEPT (migrations) FROM SERVER app_server INTO public;
+    IMPORT FOREIGN SCHEMA public EXCEPT (migrations, files, file_links, failed_jobs, json_api_client_jobs, media, oauth_access_tokens, oauth_refresh_tokens, temporary_uploads, user_networks) FROM SERVER app_server INTO public;
 end;
 $$
 SQL;
@@ -170,11 +172,13 @@ SQL;
 
         if ($db_exists) {
             return true;
-        } else if ($db_exists === false) {
-            return false;
-        } else if ($db == null) {
-            return null;
         }
+
+        if ($db_exists === false) {
+            return false;
+        }
+
+        return null;
     }
 
     /**
