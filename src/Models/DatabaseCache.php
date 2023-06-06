@@ -213,6 +213,9 @@ class DatabaseCache
             QuickrepDatabase::drop($temp_cache_table->from, $this->connectionName);
         }
 
+//        $pdo = QuickrepDatabase::connection($this->connectionName)->getPdo();
+        $pdo = QuickrepDatabase::connection(config( 'database.statistics' ))->getPdo();
+
         //now we will loop over all of the SQL queries that make up the report.
 
         $queries = $this->getIndividualQueries();
@@ -225,11 +228,17 @@ class DatabaseCache
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
                     if ($index == 0) {
                         //for the first query, we use a CREATE TABLE statement
-                        QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
+                        //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
+                        //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
+                        $create_table_sql = "CREATE TABLE {$temp_cache_table->from} AS {$query}";
+                        $pdo->exec($create_table_sql);
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
                     try {
-                        QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
+                        $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
+                        $pdo->exec($insert_sql);
+                        //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
+                        //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
                     } catch(\Illuminate\Database\QueryException $ex){
 
         
@@ -274,7 +283,8 @@ The specific error message from the database was:
                 } else {
                     //this allows us to database maintainance tasks using UPDATES etc.
                     //note that non-select statements are executed in the same order as they are provided in the contents of the returned SQL
-                    QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($query));
+                    //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($query));
+                    $pdo->exec($query);
                 }
             }
         } else {
@@ -298,7 +308,8 @@ The specific error message from the database was:
                     //then we have the table string... lets replace it.
                     $index_sql_command = str_replace($table_string_to_replace, $temp_cache_table->from, $this_index_sql_template);
                     //now lets run those index commands...
-                    QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($index_sql_command));
+                    //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($index_sql_command));
+                    $pdo->exec($index_sql_command);
                 } else {
                     throw new Exception("Quickrep Report Error: $this_index_sql_template was retrieved from GetIndexSql() but it did not contain $table_string_to_replace");
                 }

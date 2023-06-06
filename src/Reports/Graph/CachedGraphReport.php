@@ -499,11 +499,14 @@ CREATE TABLE $this->cache_db.$this->summary_table (
                 COUNT(DISTINCT(CONCAT(source_id,target_id))) AS summary_value
             FROM $this->cache_db.`{$this->getTableName()}`";
 
+        $pdo = QuickrepDatabase::connection($this->getConnectionName())->getPdo();
+
         //loop all over the sql commands and run each one in order...
         // The connection is a DB Connection to our CACHE DATABASE using the credentials
         // The connection is created in Owlookit\Quickrep\Models\QuickrepDatabsse
         foreach ($sql as $this_sql) {
-            QuickrepDatabase::connection($this->getConnectionName())->statement(DB::raw($this_sql));
+            //QuickrepDatabase::connection($this->getConnectionName())->statement(DB::raw($this_sql));
+            $pdo->exec($this_sql);
         }
 
 
@@ -518,6 +521,7 @@ CREATE TABLE $this->cache_db.$this->summary_table (
             	summary_value = '$time_elapsed'
 ;
 ";
-        QuickrepDatabase::connection($this->getConnectionName())->statement(DB::raw($processing_time_sql));
+        //QuickrepDatabase::connection($this->getConnectionName())->statement(DB::raw($processing_time_sql));
+        $pdo->exec($this_sql);
     }
 }
