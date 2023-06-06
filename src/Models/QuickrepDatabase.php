@@ -37,12 +37,12 @@ class QuickrepDatabase
         // Set the max concat length for cache DB to be A LOT
         // This will also throw an exception if the DB doesn't exist
 
-        $session_set_sql = "SET SESSION group_concat_max_len = 1000000;";
         // this way is no longer compatible with laravel 10
         // DB::connection($database)->statement(DB::raw($session_set_sql));
         // lets get the raw PDO instead.
-        $pdo = DB::connection()->getPdo();
-        $pdo->exec($session_set_sql);
+        // $session_set_sql = "SET SESSION group_concat_max_len = 1000000;"; // MySQL only, in PostgreSQL it is limited by the max length of a text value (1Gb)
+        // $pdo = DB::connection()->getPdo();
+        // $pdo->exec($session_set_sql);
     }
 
     public static function hasTable( $table_name, $connectionName )
