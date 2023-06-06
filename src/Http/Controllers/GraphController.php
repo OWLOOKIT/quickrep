@@ -16,7 +16,7 @@ class GraphController extends AbstractWebController
 
     public  function getReportApiPrefix()
     {
-        return config('quickrep.GRAPH_URI_PREFIX');
+        return config('quickrep.GRAPH_API_PREFIX');
     }
 
     /**
