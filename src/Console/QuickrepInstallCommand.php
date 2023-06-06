@@ -19,6 +19,8 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
      * @var array
      */
     public static $views = [
+        // Multiple views use the shared menu
+        'quickrep/menu.blade.php',
         // SQL Pretty-Printing views
         'quickrep/sql.blade.php',
         'quickrep/layouts/sql_layout.blade.php',
