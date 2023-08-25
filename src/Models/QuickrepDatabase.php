@@ -169,7 +169,18 @@ begin
                 from information_schema.foreign_tables) loop
      execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
   end loop;
-    IMPORT FOREIGN SCHEMA public EXCEPT (migrations, files, file_links, failed_jobs, json_api_client_jobs, media, oauth_access_tokens, oauth_refresh_tokens, temporary_uploads, user_networks) FROM SERVER app_server INTO public;
+      IMPORT FOREIGN SCHEMA application EXCEPT (
+        migrations,
+        files,
+        file_links,
+        failed_jobs,
+        json_api_client_jobs,
+        media,
+        oauth_access_tokens,
+        oauth_refresh_tokens,
+        temporary_uploads,
+        user_networks)
+    FROM SERVER app_server INTO application;
 end;
 $$
 SQL;
@@ -246,7 +257,7 @@ SQL;
         $query = <<<SQL
                     SELECT *
                       FROM information_schema.columns
-                     WHERE table_schema = 'public'
+                     WHERE table_schema = 'application'
                        AND table_name   = '{$table_name}';
 SQL;
         $result = self::connection($connectionName)->select($query);
