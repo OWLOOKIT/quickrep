@@ -184,7 +184,7 @@ begin
 end;
 $$
 SQL;
-            DB::connection(config('database.statistics'))->statement($query);
+//            DB::connection(config('database.statistics'))->statement($query);
         }
 
         if ($db_exists) {
