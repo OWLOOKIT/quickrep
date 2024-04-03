@@ -34,7 +34,7 @@ You will need to import the data under examples/data/ into a database called gra
 
 First, in order to get a graph report, you must return one or several SQL statements that will respect that expected data structure for the Graph Reporting engine, like so: 
 ```
-CREATE TABLE `graphdata_nodetypetests` (
+CREATE TABLE IF NOT EXISTS `graphdata_nodetypetests` (
   `source_id` varchar(50) NOT NULL,
   `source_name` varchar(255) NOT NULL,
   `source_size` int(11) NOT NULL DEFAULT 0,

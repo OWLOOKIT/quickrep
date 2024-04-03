@@ -254,7 +254,7 @@ class CachedGraphReport extends DatabaseCache
         // then we create a table of nodes that is the unique nodes shared between the two...
 
 	$sql['create the node cache table'] = "
-CREATE TABLE $this->cache_db.$this->nodes_table (
+CREATE TABLE IF NOT EXISTS $this->cache_db.$this->nodes_table (
   `id` int(11) NOT NULL,
   `node_id` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
   `node_name` varchar(1000) CHARACTER SET utf8 DEFAULT NULL,
@@ -352,7 +352,7 @@ ALTER TABLE $this->cache_db.$this->nodes_table
         // We wind up with a table containing all unique link types and a count of how many
         // node pairs there are of this link type
         $sql["create link type table"] =
-            "CREATE TABLE $this->cache_db.$this->link_types_table
+            "CREATE TABLE IF NOT EXISTS $this->cache_db.$this->link_types_table
             SELECT DISTINCT
                 link_type,
                 COUNT(DISTINCT(CONCAT(`source_id`,`target_id`))) AS count_distinct_link
@@ -371,7 +371,7 @@ ALTER TABLE $this->cache_db.$this->nodes_table
 
 	
 	$sql["create the links table with indexes"] = "
-CREATE TABLE $this->cache_db.`$this->links_table` (
+CREATE TABLE IF NOT EXISTS $this->cache_db.`$this->links_table` (
   `source` int(11) NOT NULL DEFAULT 0,
   `target` int(11) NOT NULL DEFAULT 0,
   `weight` decimal(15,5) NOT NULL,
@@ -411,7 +411,7 @@ ALTER TABLE $this->cache_db.`$this->links_table`
         //that we used to sort the nodes... but this time we get a unique list of node types...
 
         $sql["create node type table"] =
-            "CREATE TABLE $this->cache_db.$this->node_types_table
+            "CREATE TABLE IF NOT EXISTS $this->cache_db.$this->node_types_table
             SELECT 	
                 node_type, 
                 COUNT(DISTINCT(node_id)) AS count_distinct_node
@@ -439,7 +439,7 @@ ALTER TABLE $this->cache_db.`$this->links_table`
         $sql["drop node group table"] = "DROP TABLE IF EXISTS $this->cache_db.{$this->node_groups_table}";
 
         $sql["create node group table"] =
-            "CREATE TABLE $this->cache_db.{$this->node_groups_table}
+            "CREATE TABLE IF NOT EXISTS $this->cache_db.{$this->node_groups_table}
             SELECT 	
                 group_name, 
                 COUNT(DISTINCT(node_id)) AS count_distinct_node
@@ -465,7 +465,7 @@ ALTER TABLE $this->cache_db.`$this->links_table`
         $sql["drop the summary table"] = "DROP TABLE IF EXISTS $this->cache_db.$this->summary_table;";
 
 	$sql["create the summary table with varchar to be sage"] =  "
-CREATE TABLE $this->cache_db.$this->summary_table (
+CREATE TABLE IF NOT EXISTS $this->cache_db.$this->summary_table (
   `summary_key` varchar(39) NOT NULL,
   `summary_value` varchar(255) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

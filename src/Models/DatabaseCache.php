@@ -230,7 +230,7 @@ class DatabaseCache
                         //for the first query, we use a CREATE TABLE statement
                         //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
                         //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
-                        $create_table_sql = "CREATE TABLE {$temp_cache_table->from} AS {$query}";
+                        $create_table_sql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
                         $pdo->exec($create_table_sql);
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..

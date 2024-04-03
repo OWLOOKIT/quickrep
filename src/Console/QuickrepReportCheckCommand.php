@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._ReportTestLog (
 
 						DB::connection(config('database.statistics'))->statement($drop_table_sql);
 
-						$this_sql = "CREATE TABLE $quickrep_cache_db_name._TC_$simple_class AS " . $this_sql;
+						$this_sql = "CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._TC_$simple_class AS " . $this_sql;
 
 						$stmt = $pdo->query($this_sql); //we just need to know if it runs... 
 
