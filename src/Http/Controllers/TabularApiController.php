@@ -51,14 +51,14 @@ class TabularApiController extends AbstractApiController
         $lang=$report->getInput('lang') ?? config('app.locale');
         $header = array_map( function( $element ) use ($lang) {
             // Replace spaces with '_' in the header
-            $title = $element['title_I18n'][$lang] ? $element['title_I18n'][$lang] : $element['title'];
+            $title = $element['title_I18n'][(string)$lang] ?: $element['title'];
             return preg_replace('/\s+/', '_', $title);
         }, $header );
         $reportGenerator = new ReportGenerator( $cache );
         $collection = $reportGenerator->getCollection();
 
         // @TODO: refactor types
-        $reportDescription = $report->GetReportDescriptionI18n()[$lang];
+        $reportDescription = $report->GetReportDescriptionI18n()[(string)$lang];
 
         // File name download should include MD5 from the contents of getCode #48
         $reportName = (strlen($report->GetReportName()) > 150) ? substr($report->GetReportName(),0, 150) : $report->GetReportName();
@@ -184,14 +184,14 @@ class TabularApiController extends AbstractApiController
             $sheet->getStyle([1, 1, count($header), 1])->applyFromArray($styleArray);
 
             for ($i = 0, $l = count($header); $i < $l; $i++) {
-                $sheet->setCellValueByColumnAndRow($i + 1, 1, $header[$i]);
+                $sheet->setCellValue([$i + 1, 1], $header[$i]);
                 $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
             }
 
             for ($i = 0, $l = count($collection); $i < $l; $i++) { // row $i
                 $j = 0;
                 foreach ($collection[$i] as $k => $v) { // column $j
-                    $sheet->setCellValueByColumnAndRow($j + 1, ($i + 1 + 1), trim(strip_tags($v)));
+                    $sheet->setCellValue([$j + 1, ($i + 1 + 1)], trim(strip_tags($v)));
                     $j++;
                 }
             }
