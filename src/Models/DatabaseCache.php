@@ -230,8 +230,17 @@ class DatabaseCache
                         //for the first query, we use a CREATE TABLE statement
                         //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
                         //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
-                        $create_table_sql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
-                        $pdo->exec($create_table_sql);
+
+                        $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
+                        $pdo->exec($createTableSql);
+
+                        $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
+                        $commentText = "created_at: {$currentDateTime}";
+
+                        // SQL to add comment to the table with the creation date (PostgreSQL)
+                        $commentSql = "COMMENT ON TABLE {$temp_cache_table->from} IS '$commentText'";
+                        $pdo->exec($commentSql);
+
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
                     try {
@@ -328,36 +337,27 @@ The specific error message from the database was:
      */
     public function getLastGenerated()
     {
-// TODO: make Postgres/MySQL fallbacks for CREATE_TIME
-//        $stats = DB::connection(config('database.statistics'))->select("SELECT CURRENT_TIMESTAMP, CREATE_TIME,
-//                                    TIMESTAMPDIFF(MINUTE,CREATE_TIME, CURRENT_TIMESTAMP) as age
-//                                FROM information_schema.tables WHERE table_schema=? and table_name = ?", [$this->connectionName, $this->getTableName()]);
+        $tableName = $this->getTableName();
+        $schemaName = 'application';
+        $qualifiedTableName = "{$schemaName}.{$tableName}";
 
-//        $stats = DB::connection(config('database.statistics'))->select("SELECT CURRENT_TIMESTAMP, CREATE_TIME,
-//                                    TIMESTAMPDIFF(MINUTE,CREATE_TIME, CURRENT_TIMESTAMP) as age
-//                                FROM information_schema.tables WHERE table_schema=? and table_name = ?", [$this->connectionName, $this->getTableName()]);
-//
-//        if (!$stats) {
-            $carbonTime = Carbon::now()->toDateTimeString();
-            return $carbonTime;
-//        }
+        // get the comment from the table
+        $commentQuery = DB::select("SELECT obj_description(?::regclass, 'pg_class') as comment", [$qualifiedTableName]);
+        $comment = $commentQuery[0]->comment ?? null;
 
-        $tz = DB::connection(config('database.statistics'))->select('SELECT TIME_FORMAT( TIMEDIFF(NOW(), UTC_TIMESTAMP), "%H:%i" ) as TZ;');
+        if ($comment) {
+            // parse the comment to get the created_at date
+            preg_match('/created_at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $comment, $matches);
+            $dateTimeString = $matches[1] ?? null;
+            if ($dateTimeString) {
+                // convert the date string to a Carbon object
+                return Carbon::createFromFormat('Y-m-d H:i:s', $dateTimeString)->toDateTimeString();
+            }
 
-        $stats = $stats[0];
-
-        $time = $stats->CREATE_TIME;
-        $offset = $tz[0]->TZ;
-        if ($offset == '00:00') {
-            $offset = "+$offset";
+            return Carbon::now()->toDateTimeString(); // return current time if the comment is not set correctly
         }
 
-        $carbonTime = Carbon::createFromFormat('Y-m-d H:i:s', $time, $offset);
-
-        $carbonTime->setTimezone(config('app.timezone'));
-        $lastGeneratedTime = $carbonTime->toDateTimeString();
-
-        return $lastGeneratedTime;
+        return Carbon::now()->toDateTimeString(); // return current time if the comment is not found or not set
     }
 
     public function getExpireTime()
