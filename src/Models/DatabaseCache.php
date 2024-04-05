@@ -220,9 +220,9 @@ class DatabaseCache
 
         $queries = $this->getIndividualQueries();
 
-	if ($queries) {
-    	    //just in case someone uses an associated array...
-	    $indexed_queries = array_values($queries);
+        if ($queries) {
+            //just in case someone uses an associated array...
+            $indexed_queries = array_values($queries);
             foreach ($indexed_queries as $index => $query) {
 
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
@@ -231,62 +231,69 @@ class DatabaseCache
                         //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
                         //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
 
-                        $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
-                        $pdo->exec($createTableSql);
+                        DB::beginTransaction();
+                        try {
+                            $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
+                            $pdo->exec($createTableSql);
 
-                        $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
-                        $commentText = "created_at: {$currentDateTime}";
+                            $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
+                            $commentText = "created_at: {$currentDateTime}";
 
-                        // SQL to add comment to the table with the creation date (PostgreSQL)
-                        $commentSql = "COMMENT ON TABLE {$temp_cache_table->from} IS '$commentText'";
-                        $pdo->exec($commentSql);
+                            // SQL to add comment to the table with the creation date (PostgreSQL)
+                            $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
+                            $pdo->exec($commentSql);
+
+                            DB::commit();
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                        }
 
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
-                    try {
-                        $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
-                        $pdo->exec($insert_sql);
-                        //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
-                        //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
-                    } catch(\Illuminate\Database\QueryException $ex){
+                        try {
+                            $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
+                            $pdo->exec($insert_sql);
+                            //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
+                            //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
+                        } catch(\Illuminate\Database\QueryException $ex){
 
-        
-                        //these database errors deserve better human readable responses...
-                        //they are common problems with Quickrep reports..
-                        //so lets catch them and make sure that they are clear to end users..
-                        $messages_to_filter = [
 
-				'Insert value list does not match column list:' =>
-"Quickrep Error: SQL Column Number Mismatch. 
+                            //these database errors deserve better human readable responses...
+                            //they are common problems with Quickrep reports..
+                            //so lets catch them and make sure that they are clear to end users..
+                            $messages_to_filter = [
+
+                                'Insert value list does not match column list:' =>
+                                    "Quickrep Error: SQL Column Number Mismatch. 
 It looks like there was more than one SQL statement in this report, but the two reports did not have exactly the same number of columns... which they must for the reporting engine to work. 
 The specific error message from the database was:
 ",
-				"Data too long for column 'link_type'" =>
-"Quickrep Error: The first link_type column needs to have the longest name. 
+                                "Data too long for column 'link_type'" =>
+                                    "Quickrep Error: The first link_type column needs to have the longest name. 
 It should not be that way, but it is... 
 The specific error message from the database was: 
 ",
 
-                        ];
-        
-        
-                        $original_message = $ex->getMessage();
-        
-                        foreach($messages_to_filter as $find_me => $say_me){
-        
-                            if(strpos($original_message,$find_me) !== false){
-        
-                                $new_message = $say_me . $original_message;
-                                throw new \Exception($new_message);
-        
+                            ];
+
+
+                            $original_message = $ex->getMessage();
+
+                            foreach($messages_to_filter as $find_me => $say_me){
+
+                                if(strpos($original_message,$find_me) !== false){
+
+                                    $new_message = $say_me . $original_message;
+                                    throw new \Exception($new_message);
+
+                                }
                             }
+
+                            //if we get here then it is an "original" SQL error message..
+                            //no new information to add here... lets just re throw the original error
+                            throw $ex;
+
                         }
-        
-                        //if we get here then it is an "original" SQL error message..
-                        //no new information to add here... lets just re throw the original error
-                        throw $ex;
-        
-                    }
 
                     }
                 } else {
@@ -337,27 +344,34 @@ The specific error message from the database was:
      */
     public function getLastGenerated()
     {
+
         $tableName = $this->getTableName();
         $schemaName = 'application';
         $qualifiedTableName = "{$schemaName}.{$tableName}";
+        $query = "SELECT obj_description('{$qualifiedTableName}'::regclass, 'pg_class') as comment";
 
-        // get the comment from the table
-        $commentQuery = DB::select("SELECT obj_description(?::regclass, 'pg_class') as comment", [$qualifiedTableName]);
-        $comment = $commentQuery[0]->comment ?? null;
-
-        if ($comment) {
-            // parse the comment to get the created_at date
-            preg_match('/created_at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $comment, $matches);
-            $dateTimeString = $matches[1] ?? null;
-            if ($dateTimeString) {
-                // convert the date string to a Carbon object
-                return Carbon::createFromFormat('Y-m-d H:i:s', $dateTimeString)->toDateTimeString();
-            }
-
-            return Carbon::now()->toDateTimeString(); // return current time if the comment is not set correctly
+        // get the table comment with the creation date
+        try {
+            $commentQuery = DB::connection(config( 'database.statistics' ))->select($query);
+            $comment = $commentQuery[0]->comment ?? null;
+        } catch (\PDOException $e) {
+            return true;
         }
 
-        return Carbon::now()->toDateTimeString(); // return current time if the comment is not found or not set
+        if (!$comment) {
+            return true;
+        }
+
+        // parse the comment to get the created_at date
+        preg_match('/created_at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $comment, $matches);
+        $dateTimeString = $matches[1] ?? null;
+
+        if (!$dateTimeString) {
+            return true;
+        }
+
+        // convert the date string to a Carbon object
+        return Carbon::createFromFormat('Y-m-d H:i:s', $dateTimeString)->toDateTimeString();
     }
 
     public function getExpireTime()
