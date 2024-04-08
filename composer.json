@@ -11,7 +11,7 @@
     "require": {
         "php": ">=8.1.0",
         "doctrine/sql-formatter": "^1.2",
-        "phpoffice/phpspreadsheet": "^2.0",
+        "phpoffice/phpspreadsheet": "^1.29",
         "components/jquery": "^3.6",
         "moment/moment": "^2.30",
         "fortawesome/font-awesome" : "^6.5",
