@@ -4,7 +4,6 @@ namespace Owlookit\Quickrep\Models;
 
 use Carbon\Carbon;
 use Owlookit\Quickrep\Exceptions\InvalidDatabaseTableException;
-use Owlookit\Quickrep\Interfaces\QuickrepReportInterface;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseCache
