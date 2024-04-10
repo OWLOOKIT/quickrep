@@ -1,13 +1,33 @@
-QuickRep Reporting Engine
+QuickRep Reporting Engine Overview
 ========
 
-A PHP reporting engine that works especially well with Laravel, built with love at [Owlookit Systems](https://owlookit.com)
+An advanced PHP reporting engine designed for optimal performance with Laravel, developed by [Owlookit Systems](https://owlookit.com)
 
 
-Architecture
+Architecture Overview
 ------------------
 
-![Quickrep Data Flow Diagram](https://raw.githubusercontent.com/Owlookit/Quickrep/master/documentation/Quickrep_Reporting_Engine_Design.png)
+```mermaid
+graph LR
+    subgraph database[" "]
+        PostgreSQL_DB(PostgreSQL DB) -->|Read/Write| cache_db[_cache database]
+    end
 
-Basically the way Quickrep works is to run your SQL against your data... then put it into a cache table (usually in the \_quickrep database)
-Then it does its paging and sorting against that cached version of your data.  
+    subgraph backend["Backend Reporting Engine"]
+        Report_Files(Report Files) --> backend_engine{Backend Reporting Engine}
+        cache_db --> backend_engine
+    end
+
+    subgraph frontend["Frontend Report Viewers"]
+        backend_engine -->|Based on datatables| Frontend_Report_Viewers
+    end
+
+    Report_Files -.->|Contains SQL Queries| backend_engine
+    backend_engine -.->|Generate reports| Frontend_Report_Viewers
+
+    style database fill:#f9f,stroke:#333,stroke-width:4px
+    style backend fill:#bbf,stroke:#f66,stroke-width:2px,padding:10px
+    style frontend fill:#bfb,stroke:#f66,stroke-width:2px,padding:10px
+```
+
+At its core, Quickrep operates by executing your SQL queries against your dataset and then transferring the results into a cache table (typically within the \_quickrep database). It then performs paging and sorting operations on this cached dataset.  

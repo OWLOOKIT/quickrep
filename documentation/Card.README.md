@@ -1,59 +1,63 @@
 # QuickRepBladeCard
 Blade based bootstrap 4.1+ card based view for Quickrep reporting engine
 
-How to get started using it
--------------------------
+## How to get started using it
 
 ### Installation
 
-This package requires the Quickrep package. You will nedd to follow the [quickrep installation instructions](https://github.com/Owlookit/Quickrep)
-on how to configure your app to use quickrep.
+This package requires the Quickrep package. You will need to follow the [quickrep installation instructions](https://github.com/Owlookit/Quickrep) on how to configure your app to use quickrep.
 
-After that is complete, use composer to install, and artisan to configure the Card Report
+After that is complete, use composer to install, and artisan to configure the Card Report:
 
 ```
 composer require owlookit/quickrepbladecard
 ```
 
-Then use artisan to configure it
+Then use artisan to configure it:
 
 ```
 php artisan install:quickrepbladecard
 ```
 
+
 This may ask you to confirm the replacement of some assets... you can safely choose to replace or not replace, it makes little difference.
 
-
-
 ### How the cards work
-The cards are based on the [bootstrap card system](https://getbootstrap.com/docs/4.1/getting-started/introduction/) implemented using blade templates..
+
+The cards are based on the [bootstrap card system](https://getbootstrap.com/docs/4.1/getting-started/introduction/) implemented using blade templates.
 
 There are several functions that appear in a card report that do not appear in other report types, specifically:
 
-* The is_fluid() function determines if a fluid layout will be used
-* the cardWidth() function sets the default width of every card (which you can control with data by including a card_width in the report. Both of these will support valudes that belong in a "style" parameter of the card div. Like style='width: 200px' or style='width: 80%'. In this case, you would return just '200px' or '80%' in either the cardWidth function or in the card_width data field below.
+- The `is_fluid()` function determines if a fluid layout will be used.
+- The `cardWidth()` function sets the default width of every card (which you can control with data by including a `card_width` in the report. Both of these will support values that belong in a "style" parameter of the card div. Like `style='width: 200px'` or `style='width: 80%'`. In this case, you would return just '200px' or '80%' in either the cardWidth function or in the `card_width` data field below.
 
 ### Run an example
-To test if you have installed correctly, see if you have Quickrep Card urls in your route using artisan..
+
+To test if you have installed correctly, see if you have Quickrep Card urls in your route using artisan:
+
+
 ```
 ./artisan route:list | grep QuickrepCard
 ```
 
-You should see 3 different routes in the result... if you see nothing.. something has gone wrong...
 
-Then copy over the example data and reports to your installation
+You should see 3 different routes in the result... if you see nothing, something has gone wrong...
+
+Then copy over the example data and reports to your installation:
+
+
 ```
-mysqladmin -u YOURDBUSER -p create quickrep_cards
-mysql -u YOURDBUSER -p quickrep_cards < vendor/owlookit/quickrepbladecard/examples/data/quickrep_cards.sql
+psql -u YOURDBUSER -p create quickrep_cards
+psql -u YOURDBUSER -p quickrep_cards < vendor/owlookit/quickrepbladecard/examples/data/quickrep_cards.sql
 cp vendor/owlookit/quickrepbladecard/examples/reports/CardTest.php app/Reports/
 ```
 
-That will create the quickrep_cards test database, populate it with example data...
-And copy the Card test report to your installation...
 
-Remember that you will need to ensure that your laravel DB user has SELECT access to the quickrep_cards database..
+That will create the quickrep_cards test database, populate it with example data, and copy the Card test report to your installation.
 
-Then point your browser to
+Remember that you will need to ensure that your Laravel DB user has SELECT access to the quickrep_cards database.
+
+Then point your browser to:
 
 https://example.com/QuickrepCard/CardTest/
 

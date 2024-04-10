@@ -1,17 +1,14 @@
-QuickRep Config File Documentation
-===========================
+# QuickRep Config File Documentation
 
-Here are the variables in the documentation and what they do... 
+Understanding the various configuration variables for QuickRep and their functions.
 
-* REPORT_NAMESPACE - what is the expected php namespace of the reports, this also dictates what directory things will live in. By default reports live in app/Reports and in the name space of App\Reports.
-* API_PREFIX - we figure that you might already have something that lives under the /api of your url system.. so we use /qrapi by default for all of the Quickrep API calls.. but this lets you change that..
-* TABULAR_API_PREFIX - This is the place where you will find both the web UX and the api for the tabular reports. The default is just 'Quickrep' which means that https://yoursite.com/Quickrep/YourReportTabularNameHere/ will work out of the box. Note: the Card  reporting engine uses the same API as the tabular reports... but the UX url is https://yoursite.com/QuickrepCard/YourCardReportNameHere/
-* TREEAPI_PREFIX - This is the place where you will find both the web UX and the api for the tree reports. The default is just 'QuickrepTree' which means that https://yoursite.com/QuickrepTree/YourTreeReportNameHere/ will work out of the box.
-* GRAPH_API_PREFIX - This is the place where you will find both the web UX and the api for the graph reports. The default is just 'QuickrepGraph' which means that https://yoursite.com/QuickrepGraph/YourReportTabularNameHere/ will work out of the box.
-* RESTRICT_TAGS - should we be strict in looking at formating tags
-* MIDDLEWARE - add additional middleware for Quickrep to honor here... this is how you enable authentication
-* TAGS - these are the formatting tags that should be used with RESTRICT_TAGS
-* QUICKREP_CACHE_DB - this is where the Quickrep DB cache will be held
-* QUICKREP_CONFIG_DB - this is where the Quickrep configuration database lives.
-
-
+* `REPORT_NAMESPACE` - Defines the expected PHP namespace for the reports, which also dictates the directory for their storage. By default, reports are located in `app/Reports` and use the namespace `App\Reports`.
+* `API_PREFIX` - Anticipating that you might have existing endpoints under the `/api` URL segment, QuickRep API calls are prefixed with `/qrapi` by default. This variable allows for customization.
+* `TABULAR_API_PREFIX` - Identifies the location for both the web UX and API of the tabular reports. The default setting `'Quickrep'` means that `https://yoursite.com/Quickrep/YourReportTabularNameHere/` is ready to use immediately. Note that the Card reporting engine shares the same API as the tabular reports, but its UX URL is `https://yoursite.com/QuickrepCard/YourCardReportNameHere/`.
+* `TREEAPI_PREFIX` - Points to the web UX and API for tree reports. By default, it's set to `'QuickrepTree'`, so `https://yoursite.com/QuickrepTree/YourTreeReportNameHere/` should function directly after setup.
+* `GRAPH_API_PREFIX` - The default prefix for graph reports' UX and API is `'QuickrepGraph'`, enabling access via `https://yoursite.com/QuickrepGraph/YourGraphReportNameHere/`.
+* `RESTRICT_TAGS` - Determines whether the system should enforce strict adherence to formatting tags.
+* `MIDDLEWARE` - Here you can specify additional middleware for QuickRep to recognize, such as authentication layers.
+* `TAGS` - When using `RESTRICT_TAGS`, these are the formatting tags that should be allowed.
+* `QUICKREP_CACHE_DB` - Designates the database for QuickRep's caching mechanism.
+* `QUICKREP_CONFIG_DB` - Indicates the database where QuickRep's configuration settings are stored.

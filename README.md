@@ -29,7 +29,29 @@ Core Reporting features
 
 ScreenShot that explains everything
 --------------------------
-![Quickrep Data Flow Diagram](https://raw.githubusercontent.com/Owlookit/Quickrep/master/documentation/QuickrepScreenShot.png)
+
+```mermaid
+graph LR
+    subgraph database[" "]
+        PostgreSQL_DB(PostgreSQL DB) -->|Read/Write| cache_db[_cache database]
+    end
+
+    subgraph backend["Backend Reporting Engine"]
+        Report_Files(Report Files) --> backend_engine{Backend Reporting Engine}
+        cache_db --> backend_engine
+    end
+
+    subgraph frontend["Frontend Report Viewers"]
+        backend_engine -->|Based on datatables| Frontend_Report_Viewers
+    end
+
+    Report_Files -.->|Contains SQL Queries| backend_engine
+    backend_engine -.->|Generate reports| Frontend_Report_Viewers
+
+    style database fill:#f9f,stroke:#333,stroke-width:4px
+    style backend fill:#bbf,stroke:#f66,stroke-width:2px,padding:10px
+    style frontend fill:#bfb,stroke:#f66,stroke-width:2px,padding:10px
+```
 
 
 
@@ -259,8 +281,6 @@ To see full list of functions and variables, please see the QuickrepReport model
 https://github.com/Owlookit/Quickrep/blob/master/src/Owlookit/Quickrep/Models/QuickrepReport.php
 
 ```php
-
-<?php
 
 namespace App\Reports;
 use Owlookit\Quickrep\Reports\Tabular\AbstractTabularReport;
@@ -503,126 +523,125 @@ function, so that you can use the results to build your sql.
 Will ask the user to choose between options that are associated with the 'someWrenchSocket'
 To use it you have to setup as 'socketwrench' database and populate it with the following tables...
 
-```
+```postgresql
 --
--- Table structure for table `socketsource`
+-- Table structure for table socketsource
 --
 
-CREATE TABLE `socketsource` (
-  `id` int(11) NOT NULL,
-  `socketsource_name` varchar(255) NOT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+CREATE TABLE socketsource (
+  id int NOT NULL,
+  socketsource_name varchar(255) NOT NULL,
+  created_at timestamp NOT NULL, updated_at timestamp NOT NULL
+);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `socket_user`
+-- Table structure for table socket_user
 --
 
-CREATE TABLE `socket_user` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `wrench_id` int(11) NOT NULL,
-  `current_chosen_socket_id` int(11) NOT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
-
--- --------------------------------------------------------
-
---
--- Table structure for table `socket`
---
-
-CREATE TABLE `socket` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `wrench_id` int(11) NOT NULL,
-  `socket_value` varchar(1024) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `socket_label` varchar(1024) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `is_default_socket` tinyint(1) NOT NULL,
-  `socketsource_id` int(11) NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- --------------------------------------------------------
-
---
--- Table structure for table `autosocket`
---
-
-CREATE TABLE `autosocket` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `wrench_id` int(11) NOT NULL,
-  `socket_value` varchar(1024) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `socket_label` varchar(1024) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `is_default_socket` tinyint(1) NOT NULL,
-  `socketsource_id` int(11) NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE socket_user (
+  id int NOT NULL,
+  user_id int NOT NULL,
+  wrench_id int NOT NULL,
+  current_chosen_socket_id int NOT NULL,
+  created_at timestamp NOT NULL,
+  updated_at timestamp NOT NULL
+);
 
 
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `wrench`
+-- Table structure for table socket
 --
 
-CREATE TABLE `wrench` (
-  `id` int(11) NOT NULL,
-  `wrench_lookup_string` varchar(200) NOT NULL,
-  `wrench_label` varchar(200) NOT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+CREATE TABLE socket (
+  id int NOT NULL,
+  wrench_id int NOT NULL,
+  socket_value varchar(1024) NOT NULL,
+  socket_label varchar(1024) NOT NULL,
+  is_default_socket smallint NOT NULL,
+  socketsource_id int NOT NULL,
+  created_at timestamp NULL DEFAULT NULL,
+  updated_at timestamp NULL DEFAULT NULL
+);
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table autosocket
+--
+
+CREATE TABLE autosocket (
+  id int NOT NULL,
+  wrench_id int NOT NULL,
+  socket_value varchar(1024) NOT NULL,
+  socket_label varchar(1024) NOT NULL,
+  is_default_socket smallint NOT NULL,
+  socketsource_id int NOT NULL,
+  created_at timestamp NULL DEFAULT NULL,
+  updated_at timestamp NULL DEFAULT NULL
+);
+
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table wrench
+--
+
+CREATE TABLE wrench (
+  id int NOT NULL,
+  wrench_lookup_string varchar(200) NOT NULL,
+  wrench_label varchar(200) NOT NULL,
+  created_at timestamp NOT NULL,
+  updated_at timestamp NOT NULL
+);
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `socket`
+-- Indexes for table socket
 --
-ALTER TABLE `socket`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `wrench_value` (`socket_value`,`socket_label`),
-  ADD KEY `wrench_id` (`wrench_id`);
+ALTER TABLE socket
+  ADD PRIMARY KEY (id),
+  ADD UNIQUE KEY wrench_value (socket_value,socket_label),
+  ADD KEY wrench_id (wrench_id);
 
 --
--- Indexes for table `autosocket`
+-- Indexes for table autosocket
 --
-ALTER TABLE `autosocket`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `wrench_value` (`socket_value`,`socket_label`),
-  ADD KEY `wrench_id` (`wrench_id`);
+ALTER TABLE autosocket
+  ADD PRIMARY KEY (id),
+  ADD UNIQUE KEY wrench_value (socket_value,socket_label),
+  ADD KEY wrench_id (wrench_id);
 
 
 --
--- Indexes for table `socketsource`
+-- Indexes for table socketsource
 --
-ALTER TABLE `socketsource`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE socketsource
+  ADD PRIMARY KEY (id);
 
 --
--- Indexes for table `socket_user`
+-- Indexes for table socket_user
 --
-ALTER TABLE `socket_user`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE socket_user
+  ADD PRIMARY KEY (id);
 
 --
--- Indexes for table `wrench`
+-- Indexes for table wrench
 --
-ALTER TABLE `wrench`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `wrench_lookup_string` (`wrench_lookup_string`),
-  ADD UNIQUE KEY `wrench_label` (`wrench_label`);
+ALTER TABLE wrench
+  ADD PRIMARY KEY (id),
+  ADD UNIQUE KEY wrench_lookup_string (wrench_lookup_string),
+  ADD UNIQUE KEY wrench_label (wrench_label);
 
 ```
 

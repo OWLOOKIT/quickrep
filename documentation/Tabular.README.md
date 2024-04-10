@@ -1,14 +1,9 @@
 # QuickRepBladeTabular
-Blade based tabular view for QuickRep reporting engine
+A Blade-based tabular view package for the QuickRep reporting engine
 
-How to get started using it
+Getting Started
 -------------------------
 
 ### Installation
 
-This package requires the QuickRep package. You will nedd to follow the [QuickRep installation instructions](https://github.com/Owlookit/Quickrep) 
-on how to configure your app to use QuickRep.
-
-
-
-
+To use this package, you need to have the QuickRep package already installed. Please adhere to the [QuickRep installation instructions](https://github.com/Owlookit/Quickrep) for guidance on configuring your application to utilize QuickRep.
