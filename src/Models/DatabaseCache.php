@@ -4,6 +4,7 @@ namespace Owlookit\Quickrep\Models;
 
 use Carbon\Carbon;
 use Owlookit\Quickrep\Exceptions\InvalidDatabaseTableException;
+use Owlookit\Quickrep\Interfaces\QuickrepReportInterface;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseCache
@@ -215,11 +216,17 @@ class DatabaseCache
 //        $pdo = QuickrepDatabase::connection($this->connectionName)->getPdo();
         $pdo = QuickrepDatabase::connection(config( 'database.statistics' ))->getPdo();
 
-        //now we will loop over all of the SQL queries that make up the report.
+        //now we will loop over all the SQL queries that make up the report.
 
         $queries = $this->getIndividualQueries();
 
         if ($queries) {
+
+            $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
+            $commentText = "created_at: {$currentDateTime}";
+            // SQL to add comment to the table with the creation date (PostgreSQL)
+            $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
+
             //just in case someone uses an associated array...
             $indexed_queries = array_values($queries);
             foreach ($indexed_queries as $index => $query) {
@@ -234,12 +241,6 @@ class DatabaseCache
                         try {
                             $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
                             $pdo->exec($createTableSql);
-
-                            $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
-                            $commentText = "created_at: {$currentDateTime}";
-
-                            // SQL to add comment to the table with the creation date (PostgreSQL)
-                            $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
                             $pdo->exec($commentSql);
 
                             DB::commit();
@@ -252,6 +253,7 @@ class DatabaseCache
                         try {
                             $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
                             $pdo->exec($insert_sql);
+                            $pdo->exec($commentSql);
                             //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
                             //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
                         } catch(\Illuminate\Database\QueryException $ex){
@@ -300,6 +302,7 @@ The specific error message from the database was:
                     //note that non-select statements are executed in the same order as they are provided in the contents of the returned SQL
                     //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($query));
                     $pdo->exec($query);
+                    $pdo->exec($commentSql);
                 }
             }
         } else {
