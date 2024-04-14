@@ -253,7 +253,6 @@ class DatabaseCache
                         try {
                             $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
                             $pdo->exec($insert_sql);
-                            $pdo->exec($commentSql);
                             //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
                             //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
                         } catch(\Illuminate\Database\QueryException $ex){
@@ -302,12 +301,11 @@ The specific error message from the database was:
                     //note that non-select statements are executed in the same order as they are provided in the contents of the returned SQL
                     //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($query));
                     $pdo->exec($query);
-                    $pdo->exec($commentSql);
                 }
             }
         } else {
             //the report returned 'false'.
-            //we need to figure out how to handle this.
+            //@TODO: we need to figure out how to handle this.
         }
 
 
