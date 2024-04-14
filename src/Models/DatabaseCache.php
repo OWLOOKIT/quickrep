@@ -17,10 +17,12 @@ class DatabaseCache
     protected $report = null;
     protected $key = null;
     protected $connectionName = null;
+    protected $timezone = null;
 
     public function __construct(QuickrepReport $report, $connectionName = null)
     {
         $this->report = $report;
+        $this->timezone = config('app.timezone');
 
         // by default use the quickrep cache DB
         if ($connectionName === null) {
@@ -131,16 +133,19 @@ class DatabaseCache
 
     public function isCacheExpired()
     {
-        $expired = false;
-        $now = Carbon::now();
-        $nowTimestamp = $now->timestamp;
-        $expiredTime = $this->getExpireTime();
-        $expireTimestamp = Carbon::parse($expiredTime)->timestamp;
-        if ($nowTimestamp > $expireTimestamp) {
-            $expired = true;
+        if (!$this->report->isCacheEnabled()) {
+            return true;
         }
 
-        return $expired;
+        $expireTime = $this->getExpireTime();
+
+        if (!$expireTime) {
+            return true;
+        }
+
+        $now = Carbon::now()->setTimezone($this->timezone);
+
+        return $now->gte($expireTime);
     }
 
     public function MapRow(array $row, int $row_number)
@@ -222,7 +227,7 @@ class DatabaseCache
 
         if ($queries) {
 
-            $currentDateTime = Carbon::now()->format('Y-m-d H:i:s');
+            $currentDateTime = Carbon::now()->setTimezone($this->timezone)->format('Y-m-d H:i:s');
             $commentText = "created_at: {$currentDateTime}";
             // SQL to add comment to the table with the creation date (PostgreSQL)
             $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
