@@ -28,7 +28,7 @@ class QuickrepDatabase
             'driver' => config( "database.connections.$default.driver" ),
             'host' => config( "database.connections.$default.host" ),
             'port' => config( "database.connections.$default.port" ),
-            'database' => $database,
+            'database' => config( "database.connections.$default.database" ),
             'username' => config( "database.connections.$default.username" ),
             'password' => config( "database.connections.$default.password" ),
         ] );

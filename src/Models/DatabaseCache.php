@@ -18,6 +18,7 @@ class DatabaseCache
     protected $key = null;
     protected $connectionName = null;
     protected $timezone = null;
+    protected $pdo = null;
 
     public function __construct(QuickrepReport $report, $connectionName = null)
     {
@@ -50,6 +51,7 @@ class DatabaseCache
 
                 $this->key = $cacheDatabaseSource['table'];
                 $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
+                $this->pdo = QuickrepDatabase::connection($connectionName)->getPdo();
             }
         } else {
             // Under normal operation, where no overriding of cache is taking place,
@@ -60,6 +62,7 @@ class DatabaseCache
             // Generate the prefix, but make sure it's not longer than 32 chars
             $this->key = $this->keygen(strtolower($this->report->getClassName()));
             $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
+            $this->pdo = QuickrepDatabase::connection($connectionName)->getPdo();
 
             if ($this->exists() === false ||
                 $report->isCacheEnabled() === false ||
@@ -210,16 +213,14 @@ class DatabaseCache
      */
     public function createTable()
     {
+
         // Clone the cache table, to avoid query modifications that may affect future queries
         $temp_cache_table = clone $this->cache_table;
 
         //we are starting over, so if the table exists.. lets drop it.
         if ($this->exists()) {
-            QuickrepDatabase::drop($temp_cache_table->from, $this->connectionName);
+            QuickrepDatabase::drop($this->cache_table->from, $this->connectionName);
         }
-
-//        $pdo = QuickrepDatabase::connection($this->connectionName)->getPdo();
-        $pdo = QuickrepDatabase::connection(config( 'database.statistics' ))->getPdo();
 
         //now we will loop over all the SQL queries that make up the report.
 
@@ -242,22 +243,22 @@ class DatabaseCache
                         //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
                         //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
 
-                        DB::beginTransaction();
-                        try {
-                            $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
-                            $pdo->exec($createTableSql);
-                            $pdo->exec($commentSql);
+                        $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
 
-                            DB::commit();
-                        } catch (\Exception $e) {
-                            DB::rollBack();
+                        try {
+                            $this->pdo->beginTransaction();
+                            $this->pdo->query($createTableSql);
+                            $this->pdo->query($commentSql);
+                            $this->pdo->commit();
+                        } catch (PDOException $e) {
+                            $this->pdo->rollBack();
                         }
 
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
                         try {
                             $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
-                            $pdo->exec($insert_sql);
+                            $this->pdo->exec($insert_sql);
                             //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
                             //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
                         } catch(\Illuminate\Database\QueryException $ex){
@@ -305,7 +306,7 @@ The specific error message from the database was:
                     //this allows us to database maintainance tasks using UPDATES etc.
                     //note that non-select statements are executed in the same order as they are provided in the contents of the returned SQL
                     //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($query));
-                    $pdo->exec($query);
+                    $this->pdo->exec($query);
                 }
             }
         } else {
@@ -330,7 +331,7 @@ The specific error message from the database was:
                     $index_sql_command = str_replace($table_string_to_replace, $temp_cache_table->from, $this_index_sql_template);
                     //now lets run those index commands...
                     //QuickrepDatabase::connection($this->connectionName)->statement(DB::raw($index_sql_command));
-                    $pdo->exec($index_sql_command);
+                    $this->pdo->exec($index_sql_command);
                 } else {
                     throw new Exception("Quickrep Report Error: $this_index_sql_template was retrieved from GetIndexSql() but it did not contain $table_string_to_replace");
                 }
@@ -357,8 +358,8 @@ The specific error message from the database was:
 
         // get the table comment with the creation date
         try {
-            $commentQuery = DB::connection(config( 'database.statistics' ))->select($query);
-            $comment = $commentQuery[0]->comment ?? null;
+            $commentQuery = $this->pdo->query($query)->fetchAll();
+            $comment = $commentQuery[0]["comment"] ?? null;
         } catch (\PDOException $e) {
             return true;
         }
@@ -382,9 +383,10 @@ The specific error message from the database was:
     public function getExpireTime()
     {
         $expireTime = false;
+
         if ($this->report->isCacheEnabled()) {
 
-            $expireTimeCarbon = Carbon::parse($this->getLastGenerated())->addSeconds($this->report->howLongToCacheInSeconds());
+            $expireTimeCarbon = Carbon::parse($this->getLastGenerated())->setTimezone($this->timezone)->addSeconds($this->report->howLongToCacheInSeconds());
             $expireTime = date('Y-m-d H:i:s', $expireTimeCarbon->timestamp);
         }
 
