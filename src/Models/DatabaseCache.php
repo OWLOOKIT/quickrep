@@ -138,7 +138,7 @@ class DatabaseCache
 
     public function isCacheExpired()
     {
-        return Carbon::now()->setTimezone($this->timezone)->gte($this->getExpireTime());
+        return false;
     }
 
     public function MapRow(array $row, int $row_number)
