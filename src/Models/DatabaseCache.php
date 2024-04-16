@@ -65,12 +65,12 @@ class DatabaseCache
             $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
             $this->pdo = QuickrepDatabase::connection($connectionName)->getPdo();
 
-            if ($this->exists() === false ||
+            if (
                 $report->isCacheEnabled() === false ||
                 $this->getDoClearCache() == true ||
                 $this->isCacheExpired() === true) {
                 //if any of the above is true, then we need to re-run the create table.
-//                $this->createTable();
+                $this->createTable();
                 $this->generatedThisRequest = true;
             }
         }
@@ -122,7 +122,7 @@ class DatabaseCache
 
     public function exists(): bool
     {
-        $hasTable = QuickrepDatabase::hasTable($this->cache_table->from, $this->connectionName);
+        $hasTable = QuickrepDatabase::hasTable('application.'. $this->cache_table->from, $this->connectionName);
         return $hasTable;
     }
 
@@ -138,7 +138,17 @@ class DatabaseCache
 
     public function isCacheExpired()
     {
-        return Carbon::now()->setTimezone($this->timezone)->gte($this->getExpireTime());
+        if (!$this->report->isCacheEnabled()) {
+            return true;
+        }
+
+        $expireTime = $this->getExpireTime();
+
+        if (!$expireTime) {
+            return true;
+        }
+
+        return Carbon::now()->setTimezone($this->timezone)->gte($expireTime);
     }
 
     public function MapRow(array $row, int $row_number)
@@ -229,11 +239,10 @@ class DatabaseCache
                         try {
                             $this->pdo->beginTransaction();
                             $this->pdo->query($createTableSql);
+                            $this->pdo->exec($commentSql);
                             $this->pdo->commit();
                         } catch (PDOException $e) {
                             $this->pdo->rollBack();
-                        } finally {
-                            $this->pdo->exec($commentSql);
                         }
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
