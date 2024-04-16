@@ -138,17 +138,7 @@ class DatabaseCache
 
     public function isCacheExpired()
     {
-        if (!$this->report->isCacheEnabled()) {
-            return true;
-        }
-
-        $expireTime = $this->getExpireTime();
-
-        if (!$expireTime) {
-            return true;
-        }
-
-        return Carbon::now()->setTimezone($this->timezone)->gte($expireTime);
+        return Carbon::now()->setTimezone($this->timezone)->gte($this->getExpireTime());
     }
 
     public function MapRow(array $row, int $row_number)
