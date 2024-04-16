@@ -10,20 +10,20 @@ use Owlookit\Quickrep\Reports\Tabular\ReportSummaryGenerator;
 
 class CardsApiController
 {
-    public function index( QuickrepRequest $request )
+    public function index(QuickrepRequest $request)
     {
         $report = $request->buildReport();
-        $cache = new DatabaseCache( $report, quickrep_cache_db() );
-        $generator = new ReportGenerator( $cache );
+        $cache = new DatabaseCache($report, quickrep_cache_db());
+        $generator = new ReportGenerator($cache);
         return $generator->toJson();
     }
 
-    public function summary( QuickrepRequest $request )
+    public function summary(QuickrepRequest $request)
     {
         $report = $request->buildReport();
         // Wrap the report in cache
-        $cache = new DatabaseCache( $report, quickrep_cache_db() );
-        $generator = new ReportSummaryGenerator( $cache );
+        $cache = new DatabaseCache($report, quickrep_cache_db());
+        $generator = new ReportSummaryGenerator($cache);
         return $generator->toJson();
     }
 }

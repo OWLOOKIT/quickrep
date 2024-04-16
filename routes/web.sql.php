@@ -5,4 +5,4 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get( '/{report_key}/{parameters?}', 'SQLPrintController@show' )->where(['parameters' => '.*']);
+Route::get('/{report_key}/{parameters?}', 'SQLPrintController@show')->where(['parameters' => '.*']);

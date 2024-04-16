@@ -10,7 +10,7 @@ class NorthwindCustomerReport extends ParentTabularReport
     */
     public function GetReportName(): string
     {
-	return('Quickrep Demo: NorthWind Customer Report');
+        return ('Quickrep Demo: NorthWind Customer Report');
     }
 
     /*
@@ -18,12 +18,12 @@ class NorthwindCustomerReport extends ParentTabularReport
     */
     public function GetReportDescription(): ?string
     {
-	$customer_id = $this->getCode();
+        $customer_id = $this->getCode();
 
-	if(!is_numeric($customer_id)){
-		//this means that there was no customer_id passed in on the url...
-		//so we have a SQL that will return all of the customers information
-$html = "
+        if (!is_numeric($customer_id)) {
+            //this means that there was no customer_id passed in on the url...
+            //so we have a SQL that will return all of the customers information
+            $html = "
 <p> This is a basic list of all Northwind Customers. <br>
 On this interface test:</p>
 <ul>
@@ -39,37 +39,35 @@ On this interface test:</p>
 
 </ul>
 ";
-		return($html);
-	}else{
-		//we have only one customer here... so we will only see one customer.
-		//we need to give users a way to get back to the list of all customers...
-		$html = "
+            return ($html);
+        } else {
+            //we have only one customer here... so we will only see one customer.
+            //we need to give users a way to get back to the list of all customers...
+            $html = "
 <p>This is a filtered report, showing just one NorthWind Customer</p>
 <a class='btn btn-primary btn-small' href='/Quickrep/NorthwindCustomerReport/' role='button'>Show All Customers</a>
 <br><br>
 ";
-		return($html);
-	}
-
+            return ($html);
+        }
     }
 
-	/**
-    * This is what builds the report. It will accept a SQL statement or an Array of sql statements.
-    * Can be used in conjunction with Inputs to determine different output based on URI parameters
-    * Additional URI parameters are passed as
-    *	$this->getCode() - which will give the first url segment after the report name
-    *   $this->getParameters() - which will give an array of every later url segment after the getCode value
-    *   $this->getInput() - which will give _GET parameters (etc?)
-    **/
+    /**
+     * This is what builds the report. It will accept a SQL statement or an Array of sql statements.
+     * Can be used in conjunction with Inputs to determine different output based on URI parameters
+     * Additional URI parameters are passed as
+     *    $this->getCode() - which will give the first url segment after the report name
+     *   $this->getParameters() - which will give an array of every later url segment after the getCode value
+     *   $this->getInput() - which will give _GET parameters (etc?)
+     **/
     public function GetSQL()
     {
+        $customer_id = $this->getCode();
 
-	$customer_id = $this->getCode();
-
-	if(!is_numeric($customer_id)){
-		//this means that there was no customer_id passed in on the url...
-		//so we have a SQL that will return all of the customers information
-        $sql = "
+        if (!is_numeric($customer_id)) {
+            //this means that there was no customer_id passed in on the url...
+            //so we have a SQL that will return all of the customers information
+            $sql = "
 SELECT
 	customer.id AS customer_id,
 	companyName,
@@ -83,16 +81,14 @@ SELECT
 FROM DURC_northwind_model.customer
 ";
 
-		//lets order this report by companyName to start:
-		//this nessecary, instead of an ORDER BY on the SQL
-		//because the ORDER BY will impact the SQL -> cache table
-		//but this controls the cache table -> front end connection
-        $this->setDefaultSortOrder([['companyName' =>'desc']]);
-
-
-	}else{
-		//here we know that $customer_id is numeric, and we should search the database for a mathing customer
-        $sql = "
+            //lets order this report by companyName to start:
+            //this nessecary, instead of an ORDER BY on the SQL
+            //because the ORDER BY will impact the SQL -> cache table
+            //but this controls the cache table -> front end connection
+            $this->setDefaultSortOrder([['companyName' => 'desc']]);
+        } else {
+            //here we know that $customer_id is numeric, and we should search the database for a mathing customer
+            $sql = "
 SELECT
 	customer.id AS customer_id,
 	companyName,
@@ -106,34 +102,32 @@ SELECT
 FROM DURC_northwind_model.customer
 WHERE customer.id = '$customer_id'
 ";
+        }
 
-	}
 
-
-    	return $sql;
+        return $sql;
     }
 
 
     /**
-    * Each row content will be passed to MapRow.
-    * Values and header names can be changed.
-    * Columns cannot be added or removed
-    *
-    */
-    public function MapRow(array $row, int $row_number) :array
+     * Each row content will be passed to MapRow.
+     * Values and header names can be changed.
+     * Columns cannot be added or removed
+     *
+     */
+    public function MapRow(array $row, int $row_number): array
     {
+        /*
+        //this logic would ensure that every cell in the TABLE_NAME column, was converted to a link to
+        //a table drilldown report
+        $table_name = $row['TABLE_NAME'];
+        $row[''] = "<a href='/Quickrep/TableDrillDownReport/$table_name/'>$table_name</a>";
 
-    	/*
-		//this logic would ensure that every cell in the TABLE_NAME column, was converted to a link to
-		//a table drilldown report
-		$table_name = $row['TABLE_NAME'];
-		$row[''] = "<a href='/Quickrep/TableDrillDownReport/$table_name/'>$table_name</a>";
-
-	*/
+    */
 
         return $row;
     }
 
-	//look for the other typical report settings in ParentTabularReport.php
+    //look for the other typical report settings in ParentTabularReport.php
 
 }

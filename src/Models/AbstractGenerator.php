@@ -19,15 +19,14 @@ class AbstractGenerator
     protected $_Table = null;
     protected $_filters = [];
 
-    public function __construct( DatabaseCache $cache )
+    public function __construct(DatabaseCache $cache)
     {
         $this->cache = $cache;
     }
 
     public function addFilter(array $filters)
     {
-        foreach($filters as $field=>$value)
-        {
+        foreach ($filters as $field => $value) {
             if ((is_array($value))) {
                 if ($value[1] === 'null') {
                     // fallback in case of the single param had been set
@@ -38,19 +37,18 @@ class AbstractGenerator
                 continue;
             }
 
-            $urldecodedvalue =urldecode($value);
+            $urldecodedvalue = urldecode($value);
 
             if ($field === '_') {
-                $fields = QuickrepDatabase::getTableColumnDefinition( $this->cache->getTableName(), quickrep_cache_db() );
-                $this->cache->getTable()->where(function($q) use($fields,$urldecodedvalue)
-                {
+                $fields = QuickrepDatabase::getTableColumnDefinition($this->cache->getTableName(), quickrep_cache_db());
+                $this->cache->getTable()->where(function ($q) use ($fields, $urldecodedvalue) {
                     foreach ($fields as $field) {
                         $field_name = $field['name'];
                         $q->orWhere($field_name, 'LIKE', '%' . $urldecodedvalue . '%');
                     }
                 });
-            } else  {
-                $this->cache->getTable()->Where($field,'LIKE','%'.$urldecodedvalue.'%');
+            } else {
+                $this->cache->getTable()->Where($field, 'LIKE', '%' . $urldecodedvalue . '%');
             }
         }
     }
@@ -73,7 +71,10 @@ class AbstractGenerator
         $params = $CacheQuery->getBindings();
 
         DB::connection(config('database.statistics'))->statement("DROP TABLE IF EXISTS {$full_table}");
-        DB::connection(config('database.statistics'))->statement("CREATE TEMPORARY TABLE {$full_table} AS {$sql};",$params);
+        DB::connection(config('database.statistics'))->statement(
+            "CREATE TEMPORARY TABLE {$full_table} AS {$sql};",
+            $params
+        );
 
         return true;
     }

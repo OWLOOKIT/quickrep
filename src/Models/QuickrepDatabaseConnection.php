@@ -15,7 +15,7 @@ class QuickrepDatabaseConnection
 {
     protected $connectionName = '';
 
-    public function __construct( $connectionName )
+    public function __construct($connectionName)
     {
         $this->connectionName = $connectionName;
     }

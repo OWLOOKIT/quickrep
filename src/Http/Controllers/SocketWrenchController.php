@@ -15,16 +15,16 @@ use Owlookit\Quickrep\Models\Wrench;
 
 class SocketWrenchController
 {
-    public function index( SocketWrenchRequest $request )
+    public function index(SocketWrenchRequest $request)
     {
-        $socketUser = SocketUser::where( 'user_id', 1 )->first();
+        $socketUser = SocketUser::where('user_id', 1)->first();
         $wrenches = Wrench::all();
         return $wrenches->toJson();
     }
 
-    public function formSubmit( SocketWrenchRequest $request )
+    public function formSubmit(SocketWrenchRequest $request)
     {
-        $socketUser = SocketUser::where( 'user_id', 1 )->first();
+        $socketUser = SocketUser::where('user_id', 1)->first();
         $test = 0;
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Owlookit\Quickrep\Http\Requests;
 
+use ErrorException;
+use Owlookit\Quickrep\Models\QuickrepReport;
 use Owlookit\Quickrep\Models\ReportFactory;
 use Owlookit\Quickrep\Quickrep;
 
@@ -30,30 +32,9 @@ trait InteractsWithReports
     }
 
     /**
-     * Get the class name of the report being requested.
-     *
-     * @return mixed
-     */
-    public function reportClass()
-    {
-        // report_key is a request parameter defined by the route (we are inside a request object)
-        return tap(Quickrep::reportForKey($this->report_key), function ($report) {
-            if(is_null($report)){
-                $debug = config('app.debug');
-                if($debug){ //lets show the user a specific error
-                    throw new \ErrorException("Quickrep returned a null value when trying to create a report from key |$this->report_key| this usually means there is no existing report by that name");
-                }else{
-                    //in a production environment, we just show a 404 message
-                    abort(404);
-                }
-            }
-        });
-    }
-
-    /**
      * Get a new instance of the resource being requested.
      *
-     * @return \Owlookit\Quickrep\Models\QuickrepReport
+     * @return QuickrepReport
      */
     public function buildReport()
     {
@@ -62,6 +43,29 @@ trait InteractsWithReports
 
         // Build a new instance of $reportClass using the found class, and THIS request
         // (this trait is for requests that interact with reports)
-        return ReportFactory::build( $reportClass, $this );
+        return ReportFactory::build($reportClass, $this);
+    }
+
+    /**
+     * Get the class name of the report being requested.
+     *
+     * @return mixed
+     */
+    public function reportClass()
+    {
+        // report_key is a request parameter defined by the route (we are inside a request object)
+        return tap(Quickrep::reportForKey($this->report_key), function ($report) {
+            if (is_null($report)) {
+                $debug = config('app.debug');
+                if ($debug) { //lets show the user a specific error
+                    throw new ErrorException(
+                        "Quickrep returned a null value when trying to create a report from key |$this->report_key| this usually means there is no existing report by that name"
+                    );
+                } else {
+                    //in a production environment, we just show a 404 message
+                    abort(404);
+                }
+            }
+        });
     }
 }

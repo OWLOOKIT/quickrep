@@ -37,7 +37,8 @@ class QuickrepDebugCommand extends Command
         $db_name = DB::connection(config('database.statistics'))->getDatabaseName();
 
         // Check encoding and warn if there's non-matching encodings
-        $encodingResult = DB::connection(config('database.statistics'))->select("
+        $encodingResult = DB::connection(config('database.statistics'))->select(
+            "
             SHOW VARIABLES
             WHERE
 			( Variable_name LIKE 'character\_set\_%' OR Variable_name LIKE 'collation%'  )
@@ -47,20 +48,25 @@ class QuickrepDebugCommand extends Command
 			Variable_name != 'character_set_system'
 		AND
 			Value NOT LIKE 'utf8mb4%'
-");
+"
+        );
 
         if (count($encodingResult) > 0) {
-            $this->comment("Your database connection (through $db_name)  has character sets which may cause issues with displaying your data");
+            $this->comment(
+                "Your database connection (through $db_name)  has character sets which may cause issues with displaying your data"
+            );
             $headers = ['Database setting', 'Value'];
             $array = [];
             foreach ($encodingResult as $value) {
                 $row = [$value->Variable_name, $value->Value];
-                $array[]= $row;
+                $array[] = $row;
             }
             $this->table($headers, $array);
             $this->comment("Please consider just switching everything to utf8mb4_unicode_ci");
-            $this->comment("Because https://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci/766996#766996");
-        }else{
+            $this->comment(
+                "Because https://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci/766996#766996"
+            );
+        } else {
             $this->comment("character sets and collations look like they are all utf8mb4, so thats good");
         }
     }

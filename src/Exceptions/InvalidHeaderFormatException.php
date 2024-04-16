@@ -4,4 +4,6 @@ namespace Owlookit\Quickrep\Exceptions;
 
 use Exception;
 
-class InvalidHeaderFormatException extends Exception {}
+class InvalidHeaderFormatException extends Exception
+{
+}

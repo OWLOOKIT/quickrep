@@ -9,17 +9,15 @@
 namespace Owlookit\Quickrep\Interfaces;
 
 
-use Owlookit\Quickrep\Models\QuickrepReport;
-
 interface GeneratorInterface
 {
-    public function addFilter( array $filters );
+    public function addFilter(array $filters);
 
-    public function orderBy( array $orders );
+    public function orderBy(array $orders);
 
-    public function paginate( $length );
+    public function paginate($length);
 
-    public function init( array $params = null );
+    public function init(array $params = null);
 
     public function toJson();
 }

@@ -2,30 +2,19 @@
 
 namespace Owlookit\Quickrep\Http\Controllers;
 
-use Owlookit\Quickrep\Http\Controllers\AbstractWebController;
+use Illuminate\Config\Repository;
 use Owlookit\Quickrep\Interfaces\QuickrepReportInterface;
 
 class TabularController extends AbstractWebController
 {
     /**
-     * @return \Illuminate\Config\Repository|mixed
+     * @return Repository|mixed
      *
      * Get the view template
      */
-    public  function getViewTemplate()
+    public function getViewTemplate()
     {
         return config("quickrep.TABULAR_VIEW_TEMPLATE");
-    }
-
-    /**
-     * @return string
-     *
-     * Specify the path to this report's API
-     * This is a tabular report, so we'll use the tabular api prefix
-     */
-    public function getReportApiPrefix()
-    {
-        return tabular_api_prefix();
     }
 
     /**
@@ -37,8 +26,8 @@ class TabularController extends AbstractWebController
      */
     public function onBeforeShown(QuickrepReportInterface $report)
     {
-	    //default to a sensible location for bootstrap in case the configuration value has not been set
-        $bootstrap_css_location = asset(config('quickrep.BOOTSTRAP_CSS_LOCATION','/css/bootstrap.min.css'));
+        //default to a sensible location for bootstrap in case the configuration value has not been set
+        $bootstrap_css_location = asset(config('quickrep.BOOTSTRAP_CSS_LOCATION', '/css/bootstrap.min.css'));
         $report->pushViewVariable('bootstrap_css_location', $bootstrap_css_location);
         $report->pushViewVariable('download_uri', $this->getDownloadUri($report));
         $report->pushViewVariable('report_uri', $this->getReportUri($report));
@@ -54,28 +43,39 @@ class TabularController extends AbstractWebController
      */
     protected function getDownloadUri($report)
     {
-        $parameterString = implode("/", $report->getMergedParameters() );
+        $parameterString = implode("/", $report->getMergedParameters());
         $report_api_uri = "/{$this->getApiPrefix()}/{$this->getReportApiPrefix()}/{$report->uriKey()}/Download/{$parameterString}";
         return $report_api_uri;
     }
 
+    /**
+     * @return string
+     *
+     * Specify the path to this report's API
+     * This is a tabular report, so we'll use the tabular api prefix
+     */
+    public function getReportApiPrefix()
+    {
+        return tabular_api_prefix();
+    }
+
     protected function getReportUri($report)
     {
-        $parameterString = implode("/", $report->getMergedParameters() );
+        $parameterString = implode("/", $report->getMergedParameters());
         $report_api_uri = "/{$this->getApiPrefix()}/{$this->getReportApiPrefix()}/{$report->uriKey()}/{$parameterString}";
         return $report_api_uri;
     }
 
     protected function getSummaryUri($report)
     {
-        $parameterString = implode("/", $report->getMergedParameters() );
+        $parameterString = implode("/", $report->getMergedParameters());
         $summary_api_uri = "/{$this->getApiPrefix()}/{$this->getReportApiPrefix()}/{$report->uriKey()}/Summary/{$parameterString}";
         return $summary_api_uri;
     }
 
     protected function getPageLength($report)
     {
-        $page_length =  $report->getParameter("length") ?: 50;
+        $page_length = $report->getParameter("length") ?: 50;
         return $page_length;
     }
 }

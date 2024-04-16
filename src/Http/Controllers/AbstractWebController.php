@@ -8,52 +8,18 @@
 
 namespace Owlookit\Quickrep\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Auth;
 use Owlookit\Quickrep\Http\Requests\QuickrepRequest;
 use Owlookit\Quickrep\Interfaces\QuickrepReportInterface;
 use Owlookit\Quickrep\Models\QuickrepReport;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Foundation\Validation\ValidatesRequests;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Auth;
 
 abstract class AbstractWebController extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
-
-    /**
-     * @param QuickrepReport $report
-     * @return mixed
-     *
-     * Implemnt this method to do any modifications to the report at the controller level.
-     * Any view variables you set here will be set on every report.
-     */
-    public abstract function onBeforeShown(QuickrepReportInterface $report);
-
-    /**
-     * @return mixed
-     *
-     * Implement this method to specify the blade view template to use
-     */
-    public abstract function getViewTemplate();
-
-    /**
-     * @return mixed
-     *
-     * Implement this method to specify the report URL path like /QuickrepCard or /QuickrepGraph
-     */
-    public abstract function getReportApiPrefix();
-
-
-    /**
-     * @return string
-     *
-     * Read the API prefix like `qrapi` from the quickrep config fil
-     */
-    public function getApiPrefix()
-    {
-        return api_prefix();
-    }
 
     /**
      * @param QuickrepRequest $request
@@ -68,6 +34,15 @@ abstract class AbstractWebController extends BaseController
         $this->onBeforeShown($report);
         return $this->buildView($report);
     }
+
+    /**
+     * @param QuickrepReport $report
+     * @return mixed
+     *
+     * Implemnt this method to do any modifications to the report at the controller level.
+     * Any view variables you set here will be set on every report.
+     */
+    public abstract function onBeforeShown(QuickrepReportInterface $report);
 
     /**
      * @return View
@@ -100,6 +75,30 @@ abstract class AbstractWebController extends BaseController
         // Push all of our view variables on the template, including the report object itself
         $view_varialbes = array_merge($view_varialbes, ['report' => $report]);
 
-        return view( $view_template, $view_varialbes );
+        return view($view_template, $view_varialbes);
     }
+
+    /**
+     * @return string
+     *
+     * Read the API prefix like `qrapi` from the quickrep config fil
+     */
+    public function getApiPrefix()
+    {
+        return api_prefix();
+    }
+
+    /**
+     * @return mixed
+     *
+     * Implement this method to specify the report URL path like /QuickrepCard or /QuickrepGraph
+     */
+    public abstract function getReportApiPrefix();
+
+    /**
+     * @return mixed
+     *
+     * Implement this method to specify the blade view template to use
+     */
+    public abstract function getViewTemplate();
 }

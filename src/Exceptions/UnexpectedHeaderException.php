@@ -4,5 +4,7 @@ namespace Owlookit\Quickrep\Exceptions;
 
 use Exception;
 
-class UnexpectedHeaderException extends Exception {}
+class UnexpectedHeaderException extends Exception
+{
+}
 

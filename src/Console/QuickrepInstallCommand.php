@@ -2,17 +2,18 @@
 
 namespace Owlookit\Quickrep\Console;
 
-use Owlookit\Quickrep\Models\DatabaseCache;
-use Owlookit\Quickrep\Models\QuickrepDatabase;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Owlookit\Quickrep\Models\QuickrepDatabase;
 use phpDocumentor\Reflection\Types\Static_;
 
 class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 {
+    const CONFIG_MIGRATIONS_PATH = 'vendor/owlookit/quickrep/database/migrations';
     /**
      * The views that need to be exported.
      *
@@ -37,14 +38,12 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         'quickrep/tree_card.blade.php',
         'quickrep/layouts/tree_card_layout.blade.php',
     ];
-
     /**
      * Base directory indicating where the $views are located
      *
      * @var string
      */
     protected static $view_path = __DIR__ . '/../../views';
-
     /**
      * Map of assets (CSS and Javascript) that need to be exported to public,
      * in the format 'source => target'
@@ -74,9 +73,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         '/vendor/owlookit/quickrep/assets/quickrepbladetabular/datatables' => '/quickrepbladetabular/datatables',
         '/vendor/owlookit/quickrep/assets/quickrepbladetabular/js' => '/quickrepbladetabular/js',
     ];
-
-    protected static $config_file = __DIR__.'/../../config/quickrep.php';
-
+    protected static $config_file = __DIR__ . '/../../config/quickrep.php';
     /**
      * @var string
      *
@@ -85,15 +82,12 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
     protected $signature = 'quickrep:install
                     {--database= : Pass in the database name}
                     {--force : Overwrite existing views and database by default}';
-
     /**
      * The console command description.
      *
      * @var string
      */
     protected $description = 'Install all available Quickrep packages';
-
-    const CONFIG_MIGRATIONS_PATH = 'vendor/owlookit/quickrep/database/migrations';
 
     public function handle()
     {
@@ -123,9 +117,9 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             $user_config_file = $path_parts['basename'];
             $config_namespace = $path_parts['filename'];
             $array = Config::get($config_namespace);
-            $data = var_export( $array, 1 );
+            $data = var_export($array, 1);
             if (File::put(config_path($user_config_file), "<?php\n return $data;")) {
-                $this->info( "Wrote new config file" );
+                $this->info("Wrote new config file");
             } else {
                 $this->error("There were config changes, but there was an error writing config file.");
             }
@@ -146,22 +140,23 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         // we need to write an updated config file.
         $config_changes = false;
 
-        $quickrep_cache_db_name = config( 'quickrep.QUICKREP_CACHE_DB' );
-        $quickrep_config_db_name = config( 'quickrep.QUICKREP_CONFIG_DB' );
+        $quickrep_cache_db_name = config('quickrep.QUICKREP_CACHE_DB');
+        $quickrep_config_db_name = config('quickrep.QUICKREP_CONFIG_DB');
 
         // Check if our cache database exists, so we know whether to create it or not.
         try {
             $cache_db_exists = QuickrepDatabase::doesDatabaseExist($quickrep_cache_db_name);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error($e->getMessage());
             exit();
         }
 
         $create_quickrep_cache_db = true;
         if ($cache_db_exists === true &&
-            ! $this->option('force') ) {
-
-            if ( !$this->confirm("The Quickrep database '".$quickrep_cache_db_name."' already exists. Do you want to DROP it and recreate it?")) {
+            !$this->option('force')) {
+            if (!$this->confirm(
+                "The Quickrep database '" . $quickrep_cache_db_name . "' already exists. Do you want to DROP it and recreate it?"
+            )) {
                 $create_quickrep_cache_db = false;
             }
         }
@@ -171,7 +166,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         // display the error message and exit.
         try {
             $config_db_exists = QuickrepDatabase::doesDatabaseExist($quickrep_config_db_name);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error($e->getMessage());
             exit();
         }
@@ -186,11 +181,11 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         }
 
         $create_cache_failed = false;
-        if ( $create_quickrep_cache_db ) {
+        if ($create_quickrep_cache_db) {
             try {
                 $this->info("Running intial cache migration...");
                 $this->runQuickrepInitialCacheMigration($quickrep_cache_db_name);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $create_cache_failed = true;
             }
         }
@@ -201,8 +196,8 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             !QuickrepDatabase::doesDatabaseExist($quickrep_cache_db_name)) {
             $message = "Quickrep is unable to create the cache database,\n";
             $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
-            $default = config( 'database.statistics' );
-            $username = config( "database.connections.$default.username" );
+            $default = config('database.statistics');
+            $username = config("database.connections.$default.username");
             $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
             $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_cache`.* TO '$username'@'localhost';\n";
 
@@ -212,16 +207,16 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 
         $create_config_failed = false;
         // Do we need to create the config database, or do we migrate only?
-        if ( $create_quickrep_config_db ) {
+        if ($create_quickrep_config_db) {
             $this->info("Running intial config migration...");
             try {
                 $this->runQuickrepInitialConfigMigration($quickrep_config_db_name);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $create_config_failed = true;
             }
         } else {
             $this->info("Running update config migration...");
-            $this->migrateDatabase( $quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH );
+            $this->migrateDatabase($quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH);
         }
 
         // The following block spits out an error message that indicates why Quickrep probably couldn't create
@@ -230,8 +225,8 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             !QuickrepDatabase::doesDatabaseExist($quickrep_config_db_name)) {
             $message = "Quickrep is unable to create the config database,\n";
             $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
-            $default = config( 'database.statistics' );
-            $username = config( "database.connections.$default.username" );
+            $default = config('database.statistics');
+            $username = config("database.connections.$default.username");
             $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
             $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_config`.* TO '$username'@'localhost';";
 
@@ -246,7 +241,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         return true;
     }
 
-    public function runQuickrepInitialCacheMigration( $quickrep_cache_db_name )
+    public function runQuickrepInitialCacheMigration($quickrep_cache_db_name)
     {
         // Create the database
 //        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_cache_db_name ) ) {
@@ -255,7 +250,9 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 //
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement(DB::connection(config('database.statistics'))->raw(<<<SQL
+        DB::connection(config('database.statistics'))->statement(
+            DB::connection(config('database.statistics'))->raw(
+                <<<SQL
 DO $$ DECLARE
     r RECORD;
 BEGIN
@@ -263,16 +260,18 @@ BEGIN
         EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
     END LOOP;
 END $$;
-SQL));
+SQL
+            )
+        );
 
         // Write the database name to the master config
-        config( ['quickrep.QUICKREP_CACHE_DB' => $quickrep_cache_db_name ] );
+        config(['quickrep.QUICKREP_CACHE_DB' => $quickrep_cache_db_name]);
 
         // Configure the database for usage
-        QuickrepDatabase::configure( $quickrep_cache_db_name );
+        QuickrepDatabase::configure($quickrep_cache_db_name);
     }
 
-    public function runQuickrepInitialConfigMigration( $quickrep_config_db_name )
+    public function runQuickrepInitialConfigMigration($quickrep_config_db_name)
     {
         // Create the database
 //        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_config_db_name ) ) {
@@ -281,7 +280,9 @@ SQL));
 //
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement( DB::connection()->raw( <<<SQL
+        DB::connection(config('database.statistics'))->statement(
+            DB::connection()->raw(
+                <<<SQL
 DO $$ DECLARE
     r RECORD;
 BEGIN
@@ -289,18 +290,20 @@ BEGIN
         EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
     END LOOP;
 END $$;
-SQL ) );
+SQL
+            )
+        );
 
         // Write the database name to the master config
-        config( ['quickrep.QUICKREP_CONFIG_DB' => $quickrep_config_db_name ] );
+        config(['quickrep.QUICKREP_CONFIG_DB' => $quickrep_config_db_name]);
 
-        $this->migrateDatabase( $quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH );
+        $this->migrateDatabase($quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH);
     }
 
-    public function migrateDatabase( $dbname, $path )
+    public function migrateDatabase($dbname, $path)
     {
         // unsure the database is configured for usage
-        QuickrepDatabase::configure( $dbname );
+        QuickrepDatabase::configure($dbname);
 
         Artisan::call('migrate', [
             '--force' => true,

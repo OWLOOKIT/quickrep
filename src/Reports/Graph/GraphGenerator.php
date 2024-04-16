@@ -2,11 +2,11 @@
 
 namespace Owlookit\Quickrep\Reports\Graph;
 
+use DB;
 use Owlookit\Quickrep\Interfaces\CacheInterface;
 use Owlookit\Quickrep\Models\AbstractGenerator;
-use Owlookit\Quickrep\Models\DatabaseCache;
 use Owlookit\Quickrep\Models\QuickrepDatabase;
-use DB;
+use PDO;
 
 class GraphGenerator extends AbstractGenerator
 {
@@ -32,7 +32,7 @@ class GraphGenerator extends AbstractGenerator
 
         $report_description = $this->report->getReportDescription();
         $report_name = $this->report->getReportName();
-	$cache_db = '_quickrep_cache'; //should be coming from config TODO
+        $cache_db = '_quickrep_cache'; //should be coming from config TODO
 
         //lets read in the node types
 
@@ -50,9 +50,8 @@ FROM $this->cache_db.{$this->cache->getNodeTypesTable()}
         $node_types = [];
         //$node_types_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($node_types_sql));
         $node_types_result = $pdo->query($node_types_sql);
-        $node_types_result->setFetchMode(\PDO::FETCH_OBJ);
+        $node_types_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($node_types_result as $this_row) {
-
             //handle the differeces between json and mysql/php here for is_img
             if ($this_row->is_img) {
                 $is_img = false;
@@ -82,9 +81,8 @@ FROM $this->cache_db.{$this->cache->getLinkTypesTable()}
         $link_types = [];
         //$link_types_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($link_types_sql));
         $link_types_result = $pdo->query($link_types_sql);
-        $link_types_result->setFetchMode(\PDO::FETCH_OBJ);
+        $link_types_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($link_types_result as $this_row) {
-
             $link_types[$this_row->my_index] = [
                 'id' => $this_row->label,
                 'label' => $this_row->label,
@@ -107,9 +105,8 @@ FROM $this->cache_db.{$this->cache->getNodeGroupsTable()}
         $node_groups = [];
         //$node_groups_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($group_sql));
         $node_groups_result = $pdo->query($group_sql);
-        $node_groups_result->setFetchMode(\PDO::FETCH_OBJ);
+        $node_groups_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($node_groups_result as $this_row) {
-
             $node_groups[$this_row->my_index] = [
                 'id' => $this_row->id,
                 'name' => $this_row->name,
@@ -145,9 +142,8 @@ ORDER BY nodes.id ASC
         $nodes = [];
         //$nodes_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($nodes_sql));
         $nodes_result = $pdo->query($nodes_sql);
-        $nodes_result->setFetchMode(\PDO::FETCH_OBJ);
+        $nodes_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($nodes_result as $this_row) {
-
             if (is_null($this_row->img)) {
                 $img = false;
             } else {
@@ -156,12 +152,12 @@ ORDER BY nodes.id ASC
 
             //we would this version result in an object instead of an array?? confusing
 //		$nodes[$this_row->my_index] = [
-            $nodes[(int) $this_row->my_index] = [
+            $nodes[(int)$this_row->my_index] = [
                 'name' => $this_row->name,
                 'short_name' => substr($this_row->name, 0, 50),
                 'longitude' => $this_row->longitude,
                 'latitiude' => $this_row->latitude,
-		'json_url' => $this_row->json_url,
+                'json_url' => $this_row->json_url,
                 'group' => (int)$this_row->group,
                 'size' => (int)$this_row->size,
                 'img' => $img,
@@ -173,17 +169,18 @@ ORDER BY nodes.id ASC
             ];
         }
 
-	//nodes are built, but we want to make sure that it turns into an array in the json rather than object..
-	$nodes = array_values($nodes); //should return  a zero indexed array. not sure why this converts it to an array.. but it does....
+        //nodes are built, but we want to make sure that it turns into an array in the json rather than object..
+        $nodes = array_values(
+            $nodes
+        ); //should return  a zero indexed array. not sure why this converts it to an array.. but it does....
 
         // Retrieve the links from the DB
         $links_sql = "SELECT * FROM $this->cache_db.`{$this->cache->getLinksTable()}`";
         $links = [];
         //$links_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($links_sql));
         $links_result = $pdo->query($links_sql);
-        $links_result->setFetchMode(\PDO::FETCH_OBJ);
+        $links_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($links_result as $this_row) {
-
             $links[] = [
                 'source' => $this_row->source,
                 'target' => $this_row->target,
@@ -202,7 +199,7 @@ ORDER BY nodes.id ASC
         $summary = [];
         //$summary_result = QuickrepDatabase::connection($this->cache->getConnectionName())->select(DB::raw($summary_sql));
         $summary_result = $pdo->query($summary_sql);
-        $summary_result->setFetchMode(\PDO::FETCH_OBJ);
+        $summary_result->setFetchMode(PDO::FETCH_OBJ);
         foreach ($summary_result as $this_row) {
             $summary[][$this_row->summary_key] = $this_row->summary_value;
         }

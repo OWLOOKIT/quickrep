@@ -1,9 +1,9 @@
 <html>
 <head>
 
-<title>{{ $report->getReportName()  }}</title>
+    <title>{{ $report->getReportName()  }}</title>
 
-<link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css"/>
 </head>
 <body>
 

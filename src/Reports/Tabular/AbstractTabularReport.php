@@ -5,6 +5,7 @@
  * Date: 1/14/19
  * Time: 9:51 AM
  */
+
 namespace Owlookit\Quickrep\Reports\Tabular;
 
 use Owlookit\Quickrep\Models\QuickrepReport;
@@ -18,7 +19,18 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $VALID_COLUMN_FORMAT = ['TEXT','DETAIL','URL','CURRENCY','NUMBER','DECIMAL','DATE','DATETIME','TIME','PERCENT'];
+    public $VALID_COLUMN_FORMAT = [
+        'TEXT',
+        'DETAIL',
+        'URL',
+        'CURRENCY',
+        'NUMBER',
+        'DECIMAL',
+        'DATE',
+        'DATETIME',
+        'TIME',
+        'PERCENT'
+    ];
 
 
     /**
@@ -27,7 +39,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $DETAIL     = ['Sentence'];
+    public $DETAIL = ['Sentence'];
 
     /**
      * $URL
@@ -35,7 +47,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $URL        = ['URL'];
+    public $URL = ['URL'];
 
     /**
      * $CURRENCY
@@ -43,7 +55,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $CURRENCY   = ['Amt','Amount','Paid','Cost'];
+    public $CURRENCY = ['Amt', 'Amount', 'Paid', 'Cost'];
 
     /**
      * $NUMBER
@@ -51,7 +63,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $NUMBER     = ['id','#','Num','Sum','Total','Cnt','Count'];
+    public $NUMBER = ['id', '#', 'Num', 'Sum', 'Total', 'Cnt', 'Count'];
 
     /**
      * $DECIMAL
@@ -59,7 +71,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $DECIMAL    = ['Avg','Average'];
+    public $DECIMAL = ['Avg', 'Average'];
 
     /**
      * $PERCENT
@@ -67,7 +79,7 @@ abstract class AbstractTabularReport extends QuickrepReport
      *
      * @var array
      */
-    public $PERCENT    = ['Percent','Ratio','Perentage'];
+    public $PERCENT = ['Percent', 'Ratio', 'Perentage'];
 
 
     /**

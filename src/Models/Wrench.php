@@ -21,6 +21,6 @@ class Wrench extends AbstractQuickrepModel
 
     public function sockets()
     {
-        return $this->hasMany(Socket::class )->orderBy('socket_label');
+        return $this->hasMany(Socket::class)->orderBy('socket_label');
     }
 }

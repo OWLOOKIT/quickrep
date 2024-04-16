@@ -4,4 +4,6 @@ namespace Owlookit\Quickrep\Exceptions;
 
 use Exception;
 
-class UnexpectedMapRowException extends Exception {}
+class UnexpectedMapRowException extends Exception
+{
+}

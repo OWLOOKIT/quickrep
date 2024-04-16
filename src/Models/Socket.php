@@ -16,6 +16,6 @@ class Socket extends AbstractQuickrepModel
 
     public function wrench()
     {
-        return $this->belongsTo( Wrench::class );
+        return $this->belongsTo(Wrench::class);
     }
 }

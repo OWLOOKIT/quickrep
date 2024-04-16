@@ -2,17 +2,16 @@
 
 namespace Owlookit\Quickrep\Reports\Tabular;
 
+use Owlookit\Quickrep\Exceptions\InvalidHeaderFormatException;
+use Owlookit\Quickrep\Exceptions\InvalidHeaderTagException;
+use Owlookit\Quickrep\Exceptions\UnexpectedHeaderException;
+use Owlookit\Quickrep\Exceptions\UnexpectedMapRowException;
 use Owlookit\Quickrep\Interfaces\CacheInterface;
 use Owlookit\Quickrep\Interfaces\GeneratorInterface;
 use Owlookit\Quickrep\Models\AbstractGenerator;
 use Owlookit\Quickrep\Models\DatabaseCache;
 use Owlookit\Quickrep\Models\QuickrepDatabase;
 use Owlookit\Quickrep\Models\QuickrepReport;
-use Owlookit\Quickrep\Exceptions\InvalidDatabaseTableException;
-use Owlookit\Quickrep\Exceptions\InvalidHeaderFormatException;
-use Owlookit\Quickrep\Exceptions\InvalidHeaderTagException;
-use Owlookit\Quickrep\Exceptions\UnexpectedHeaderException;
-use Owlookit\Quickrep\Exceptions\UnexpectedMapRowException;
 
 class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 {
@@ -20,17 +19,17 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
     protected $cache = null;
 
-    public function __construct( DatabaseCache $cache )
+    public function __construct(DatabaseCache $cache)
     {
         $this->cache = $cache;
     }
 
-    public function init( array $params = null )
+    public function init(array $params = null)
     {
-        parent::init( $params );
+        parent::init($params);
     }
 
-    public function getHeader( bool $includeSummary = false )
+    public function getHeader(bool $includeSummary = false)
     {
         $mapped_header = []; //this is the result from the MapRow function
 
@@ -42,14 +41,14 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
         // convert stdClass to array
         $data_row = [];
-        if(!is_null($first_row_of_data)){
+        if (!is_null($first_row_of_data)) {
             foreach ($first_row_of_data as $key => $value) {
                 $data_row[$key] = $value;  //MapRow needs  at least one row of real data to function properly...
             }
         }
 
         $has_data = true;
-        if(count($data_row) == 0) {
+        if (count($data_row) == 0) {
             $data_row = [];
             $has_data = false;
         }
@@ -60,24 +59,28 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         Run the MapRow once to get the proper column name from the Report
          */
         $first_row_num = 0;
-        if ( $has_data ) { //this means that the first row had results..
+        if ($has_data) { //this means that the first row had results..
             //but here we are not sure if MapRow might change column names or add columns or even delete columns..
             //so we have to run it on the first row of actual data and then see what columns come back..
-            $data_row = $this->cache->MapRow( $data_row, $first_row_num );
-            $mapped_header = array_keys( $data_row );
+            $data_row = $this->cache->MapRow($data_row, $first_row_num);
+            $mapped_header = array_keys($data_row);
         }
 
         /*
         This makes sure no new columns were added or removed.
          */
         if (count($original_array_key) != count($mapped_header)) {
-            if (count($original_array_key) < count($mapped_header)){
-                $diff = array_diff($mapped_header,$original_array_key);
-                $diff_text = var_export($diff,true);
-                $original_text = var_export($original_array_key,true);
-                throw new UnexpectedMapRowException("Quickrep Report Error: There are more values returned in the row than went into MapRow. These field names have been added:  $diff_text, was expecting $original_text");
-            }else{
-                throw new UnexpectedMapRowException("Quickrep Report Error: There are fewer values returned in the row than went into MapRow");
+            if (count($original_array_key) < count($mapped_header)) {
+                $diff = array_diff($mapped_header, $original_array_key);
+                $diff_text = var_export($diff, true);
+                $original_text = var_export($original_array_key, true);
+                throw new UnexpectedMapRowException(
+                    "Quickrep Report Error: There are more values returned in the row than went into MapRow. These field names have been added:  $diff_text, was expecting $original_text"
+                );
+            } else {
+                throw new UnexpectedMapRowException(
+                    "Quickrep Report Error: There are fewer values returned in the row than went into MapRow"
+                );
             }
         }
 
@@ -107,9 +110,10 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
             }
 
             if ($format !== null && !in_array($format, $this->cache->getReport()->VALID_COLUMN_FORMAT)) {
-                throw new InvalidHeaderFormatException("Quickrep Report Error: Invalid column header format: {$format}");
+                throw new InvalidHeaderFormatException(
+                    "Quickrep Report Error: Invalid column header format: {$format}"
+                );
             }
-
         }
 
         foreach ($header_tags as $name => &$tags) {
@@ -145,18 +149,22 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
             foreach ($fields as $field_name => $field) {
                 if ($field['type'] == 'string') {
                     $target_fields[] = "count(distinct({$field_name})) as cnt_{$field_name}";
-                } else if ($field['type'] == 'integer' || $field['type'] == 'decimal') {
-                    $target_fields[] = "sum({$field_name}) as sum_{$field_name}";
-                    $target_fields[] = "avg({$field_name}) as avg_{$field_name}";
-                    $target_fields[] = "stddev({$field_name}) as std_{$field_name}";
-                    $target_fields[] = "min({$field_name}) as min_{$field_name}";
-                    $target_fields[] = "max({$field_name}) as max_{$field_name}";
-                } else if ($field['type'] == 'date') {
-                    // @TODO: make a Postgres fallback
+                } else {
+                    if ($field['type'] == 'integer' || $field['type'] == 'decimal') {
+                        $target_fields[] = "sum({$field_name}) as sum_{$field_name}";
+                        $target_fields[] = "avg({$field_name}) as avg_{$field_name}";
+                        $target_fields[] = "stddev({$field_name}) as std_{$field_name}";
+                        $target_fields[] = "min({$field_name}) as min_{$field_name}";
+                        $target_fields[] = "max({$field_name}) as max_{$field_name}";
+                    } else {
+                        if ($field['type'] == 'date') {
+                            // @TODO: make a Postgres fallback
 //                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP({$field_name}))) as avg_{$field_name}";
 //                    $target_fields[] = "extract(epoch from (avg(to_timestamp({$field_name})))) as avg_{$field_name}";
-                    $target_fields[] = "min({$field_name}) as min_{$field_name}";
-                    $target_fields[] = "max({$field_name}) as max_{$field_name}";
+                            $target_fields[] = "min({$field_name}) as min_{$field_name}";
+                            $target_fields[] = "max({$field_name}) as max_{$field_name}";
+                        }
+                    }
                 }
             }
             $target_fields = implode(",", $target_fields);
@@ -221,14 +229,6 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         return $header;
     }
 
-
-    public function paginate($length)
-    {
-        $Pager = clone $this->cache->getTable();
-        return $Pager->paginate($length);
-    }
-
-
     /**
      * DefaultColumnFormat
      * Attempts to return the format of the column based on the column name and the predefine header configuration
@@ -241,69 +241,51 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
     private static function DefaultColumnFormat(QuickrepReport $Report, array $format, array $fields): array
     {
         foreach ($format as $name => $value) {
-
             if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DETAIL)) {
                 $format[$name] = 'DETAIL';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array($fields[$name]["type"], ["string"])) {
-                $format[$name] = 'URL';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->CURRENCY) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                $format[$name] = 'CURRENCY';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->NUMBER) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                $format[$name] = 'NUMBER';
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DECIMAL) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                $format[$name] = 'DECIMAL';
-            } else if (in_array($fields[$name]["type"], ["date", "time", "datetime"])) {
-                $format[$name] = strtoupper($fields[$name]["type"]);
-            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->PERCENT) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                $format[$name] = 'PERCENT';
+            } else {
+                if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array(
+                        $fields[$name]["type"],
+                        ["string"]
+                    )) {
+                    $format[$name] = 'URL';
+                } else {
+                    if (QuickrepDatabase::isColumnInKeyArray(
+                        $name,
+                        $Report->CURRENCY
+                    ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                        $format[$name] = 'CURRENCY';
+                    } else {
+                        if (QuickrepDatabase::isColumnInKeyArray(
+                            $name,
+                            $Report->NUMBER
+                        ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                            $format[$name] = 'NUMBER';
+                        } else {
+                            if (QuickrepDatabase::isColumnInKeyArray(
+                                $name,
+                                $Report->DECIMAL
+                            ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                                $format[$name] = 'DECIMAL';
+                            } else {
+                                if (in_array($fields[$name]["type"], ["date", "time", "datetime"])) {
+                                    $format[$name] = strtoupper($fields[$name]["type"]);
+                                } else {
+                                    if (QuickrepDatabase::isColumnInKeyArray(
+                                        $name,
+                                        $Report->PERCENT
+                                    ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                                        $format[$name] = 'PERCENT';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-
         }
 
         return $format;
-    }
-
-    public function getCollection()
-    {
-        $Report = $this->cache->getReport();
-
-        /*
-        If there is a filter, lets apply it to each column
-         */
-        $filter = $Report->getInput('filter');
-        if ($filter && is_array($filter)) {
-            $associated_filter = [];
-            foreach($filter as $f=>$item)
-            {
-                $field = key($item);
-                $value = $item[$field];
-                $associated_filter[$field] = $value;
-            }
-
-            $this->addFilter($associated_filter);
-        }
-
-        $orderBy = $Report->getInput('order') ?? [];
-
-        $this->orderBy($orderBy);
-
-        $table = $this->cache->getTable();
-
-        /*
-        Transform each row using $Report->MapRow()
-         */
-        $collection = $table->get();
-        $collection->transform(function ($value, $key) use ($Report) {
-            $value_array = $this->objectToArray( $value );
-            $mapped_row = $Report->MapRow($value_array, $key);
-            $mapped_and_encoded = [];
-            foreach ( $mapped_row as $mapped_key => $mapped_value ) {
-                $mapped_and_encoded[$mapped_key]= mb_convert_encoding( $mapped_value, 'UTF-8', 'UTF-8' );
-            }
-            return $this->arrayToObject( $mapped_and_encoded );
-        });
-
-        return $collection;
     }
 
     /**
@@ -334,8 +316,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $filter = $Report->getInput('filter');
         if ($filter && is_array($filter)) {
             $associated_filter = [];
-            foreach($filter as $f=>$item)
-            {
+            foreach ($filter as $f => $item) {
                 $field = key($item);
                 $value = $item[$field];
                 $associated_filter[$field] = $value;
@@ -358,19 +339,19 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
          */
         $collection = $paging->getCollection();
         $collection->transform(function ($value, $key) use ($Report) {
-            $value_array = $this->objectToArray( $value );
+            $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);
             $mapped_and_encoded = [];
-            foreach ( $mapped_row as $mapped_key => $mapped_value ) {
-                $mapped_and_encoded[$mapped_key]= mb_convert_encoding( $mapped_value, 'UTF-8', 'UTF-8' );
+            foreach ($mapped_row as $mapped_key => $mapped_value) {
+                $mapped_and_encoded[$mapped_key] = mb_convert_encoding($mapped_value, 'UTF-8', 'UTF-8');
             }
-            return $this->arrayToObject( $mapped_and_encoded );
+            return $this->arrayToObject($mapped_and_encoded);
         });
 
         /*
         Add in the report name/description/columns
          */
-        $reportSummary = new ReportSummaryGenerator( $this->cache );
+        $reportSummary = new ReportSummaryGenerator($this->cache);
         $custom = collect($reportSummary->toJson($Report));
 
         $merge = $custom->merge($paging);
@@ -385,7 +366,56 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         return $merge;
     }
 
-    function objectToArray($d) {
+    public function paginate($length)
+    {
+        $Pager = clone $this->cache->getTable();
+        return $Pager->paginate($length);
+    }
+
+    public function getCollection()
+    {
+        $Report = $this->cache->getReport();
+
+        /*
+        If there is a filter, lets apply it to each column
+         */
+        $filter = $Report->getInput('filter');
+        if ($filter && is_array($filter)) {
+            $associated_filter = [];
+            foreach ($filter as $f => $item) {
+                $field = key($item);
+                $value = $item[$field];
+                $associated_filter[$field] = $value;
+            }
+
+            $this->addFilter($associated_filter);
+        }
+
+        $orderBy = $Report->getInput('order') ?? [];
+
+        $this->orderBy($orderBy);
+
+        $table = $this->cache->getTable();
+
+        /*
+        Transform each row using $Report->MapRow()
+         */
+        $collection = $table->get();
+        $collection->transform(function ($value, $key) use ($Report) {
+            $value_array = $this->objectToArray($value);
+            $mapped_row = $Report->MapRow($value_array, $key);
+            $mapped_and_encoded = [];
+            foreach ($mapped_row as $mapped_key => $mapped_value) {
+                $mapped_and_encoded[$mapped_key] = mb_convert_encoding($mapped_value, 'UTF-8', 'UTF-8');
+            }
+            return $this->arrayToObject($mapped_and_encoded);
+        });
+
+        return $collection;
+    }
+
+    function objectToArray($d)
+    {
         if (is_object($d)) {
             // Gets the properties of the given object
             // with get_object_vars function
@@ -399,16 +429,15 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
             * for recursive call
             */
             return array_map([$this, 'objectToArray'], $d);
-        }
-        else {
+        } else {
             // Return array
             return $d;
         }
     }
 
-    function arrayToObject( $arr )
+    function arrayToObject($arr)
     {
-        return json_decode( json_encode ( $arr ) );
+        return json_decode(json_encode($arr));
     }
 
 }

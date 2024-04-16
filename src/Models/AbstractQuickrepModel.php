@@ -15,9 +15,9 @@ abstract class AbstractQuickrepModel extends Model
 {
     protected $connection = null;
 
-    public function __construct( array $attributes = [] )
+    public function __construct(array $attributes = [])
     {
-        parent::__construct( $attributes );
+        parent::__construct($attributes);
 
         // We use the quickrep config DB for our "in-house" models
         $this->connection = quickrep_config_db();

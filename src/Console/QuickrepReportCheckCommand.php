@@ -8,12 +8,11 @@
 
 namespace Owlookit\Quickrep\Console;
 
+use DirectoryIterator;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Owlookit\Quickrep\Reports\Graph\AbstractGraphReport;
-use Owlookit\Quickrep\Reports\Tabular\AbstractTabularReport;
-use Owlookit\Quickrep\Reports\Tree\AbstractTreeReport;
-use Owlookit\Quickrep\Reports\Cards\AbstractCardsReport;
+use ReflectionClass;
 
 class QuickrepReportCheckCommand extends Command
 {
@@ -38,22 +37,21 @@ class QuickrepReportCheckCommand extends Command
      */
     public function handle()
     {
+        $is_debug = false;
 
-	$is_debug = false;
+        $db_name = DB::connection(config('database.statistics'))->getDatabaseName();
 
-	$db_name = DB::connection(config('database.statistics'))->getDatabaseName();
+        $pdo = DB::connection(config('database.statistics'))->getPdo();
 
-	$pdo = DB::connection(config('database.statistics'))->getPdo();
+        $quickrep_cache_db_name = config('quickrep.QUICKREP_CACHE_DB');
 
-	$quickrep_cache_db_name = config( 'quickrep.QUICKREP_CACHE_DB' );
-
-	$delete_log_sql = "
+        $delete_log_sql = "
 DROP TABLE IF EXISTS $quickrep_cache_db_name._ReportTestLog
 ";
 
-	DB::connection(config('database.statistics'))->statement($delete_log_sql);
+        DB::connection(config('database.statistics'))->statement($delete_log_sql);
 
-	$create_log_sql = "
+        $create_log_sql = "
 CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._ReportTestLog (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `error_type` varchar(190) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -67,178 +65,179 @@ CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._ReportTestLog (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ";
 
-	DB::connection(config('database.statistics'))->statement($create_log_sql);
-	
-	$report_dir = report_path(); //from helpers.php
+        DB::connection(config('database.statistics'))->statement($create_log_sql);
 
-	$file_list = [];
+        $report_dir = report_path(); //from helpers.php
 
-	$is_durc = $this->option('include_durc');
+        $file_list = [];
 
-	$Dir = new \DirectoryIterator($report_dir);
-	foreach(glob($report_dir . "/*.php") as $this_file){
+        $is_durc = $this->option('include_durc');
 
-			if($is_durc){
-				//then every file gets added to the list!!
-				$file_list[] = $this_file;
-			}else{
-				//then only custom (non DURC generated) results are being tested
-				if(strpos($this_file,'DURC_') !== false){
-					$is_match_durc = true;
-				}else{
-					$is_match_durc = false;
-					$file_list[] = $this_file;
-				}
-			}
-	}
-	
-	if($is_debug) { echo "Testing the following reports\n"; }
+        $Dir = new DirectoryIterator($report_dir);
+        foreach (glob($report_dir . "/*.php") as $this_file) {
+            if ($is_durc) {
+                //then every file gets added to the list!!
+                $file_list[] = $this_file;
+            } else {
+                //then only custom (non DURC generated) results are being tested
+                if (strpos($this_file, 'DURC_') !== false) {
+                    $is_match_durc = true;
+                } else {
+                    $is_match_durc = false;
+                    $file_list[] = $this_file;
+                }
+            }
+        }
 
-	$error_array = []; //hopefully this is empty in the end...
+        if ($is_debug) {
+            echo "Testing the following reports\n";
+        }
 
-	foreach($file_list as $this_file){
-		if($is_debug){ echo "Requiring $this_file\n"; }
-		$previously_declared_classes = get_declared_classes();
-		require_once($this_file); //do it the old school way prevents us from worrying about 'use'
-		$diff = array_diff(get_declared_classes(),$previously_declared_classes);
-		$class = array_pop($diff); //returns the last element of the array...
-	
-		if($is_debug) { echo "Which contains $class\n"; }
+        $error_array = []; //hopefully this is empty in the end...
 
-		$test_cases = $class::testMeWithThis();
+        foreach ($file_list as $this_file) {
+            if ($is_debug) {
+                echo "Requiring $this_file\n";
+            }
+            $previously_declared_classes = get_declared_classes();
+            require_once($this_file); //do it the old school way prevents us from worrying about 'use'
+            $diff = array_diff(get_declared_classes(), $previously_declared_classes);
+            $class = array_pop($diff); //returns the last element of the array...
 
-		if(!$test_cases){
-			//then we should use just one test case
-			$test_cases = [ 
-				[
-					'Code' => null,
-					'Parameters' => [],
-					'Input' => [],
-				]
-				];	
-				
-		}
-	
-		$need_these = [
-			'Code',
-			'Parameters',
-			'Input',
-		];
+            if ($is_debug) {
+                echo "Which contains $class\n";
+            }
 
-	
-		//see if we can manually set this..
-		//very unsure why this is not respecting the sql parameters from the /config/database.php mysql modes configuration... 
-		//still this does seem to work... and it forces the ONLY_FULL_GROUP_BY which is the big change that we are trying to account for (right now)
-		\DB::connection(config('database.statistics'))->statement("SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';");
+            $test_cases = $class::testMeWithThis();
 
-		foreach($test_cases as $this_test_case){
-			
-			foreach($need_these as $need_this){
-				if(array_key_exists($need_this,$this_test_case)){ //some of our values can be null. so we annot use isset
-					$$need_this = $this_test_case[$need_this]; //pull the variable into local scope, in the end all of the need_these will be in local scope now..
-				}else{
-					echo "Error: Testing $this_file looking for ['$need_this'] in the test_case array... and I do not find it.. \n";
-					var_export($this_test_case);
-					exit();
-				}
-			}
-			
-			//now we shoud have all of the need_these variables as local variables...
-			//So we have $Code, $Parameters, and $Input all correctly defined...
-			//so now we try to run the SQL for each one...
+            if (!$test_cases) {
+                //then we should use just one test case
+                $test_cases = [
+                    [
+                        'Code' => null,
+                        'Parameters' => [],
+                        'Input' => [],
+                    ]
+                ];
+            }
 
-			$reflection_of_class = new \ReflectionClass($class);
+            $need_these = [
+                'Code',
+                'Parameters',
+                'Input',
+            ];
 
-			if(!$reflection_of_class->isAbstract()){
 
-				try {
-					$report = new $class($Code,$Parameters,$Input);
-					$sql = $report->getSQL();
-				} catch (\Exception $e) {
+            //see if we can manually set this..
+            //very unsure why this is not respecting the sql parameters from the /config/database.php mysql modes configuration...
+            //still this does seem to work... and it forces the ONLY_FULL_GROUP_BY which is the big change that we are trying to account for (right now)
+            \DB::connection(config('database.statistics'))->statement(
+                "SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';"
+            );
 
-						$error_array[] = [
-							'error_type' => 'Report Class Failed to Instantiate',
-							'error_message' => $e->getMessage(),	
-							'file_with_problem' => $this_file,
-							'class_with_problem' => $class,
-						];
-						continue; //no need to test sql if we cannot create the class
-				}
+            foreach ($test_cases as $this_test_case) {
+                foreach ($need_these as $need_this) {
+                    if (array_key_exists(
+                        $need_this,
+                        $this_test_case
+                    )) { //some of our values can be null. so we annot use isset
+                        $$need_this = $this_test_case[$need_this]; //pull the variable into local scope, in the end all of the need_these will be in local scope now..
+                    } else {
+                        echo "Error: Testing $this_file looking for ['$need_this'] in the test_case array... and I do not find it.. \n";
+                        var_export($this_test_case);
+                        exit();
+                    }
+                }
 
-				if(!is_array($sql)){
-					//we need to make it array so that we always have array..
-					$sql_array = [ $sql ];
-				}else{
-					$sql_array = $sql;
-				}
+                //now we shoud have all of the need_these variables as local variables...
+                //So we have $Code, $Parameters, and $Input all correctly defined...
+                //so now we try to run the SQL for each one...
 
-				$success_count = 0;
-				$fail_count = 0;
-				foreach($sql_array as $this_sql){
-		
-					$class_array = explode('\\',$class);
-					$simple_class = array_pop($class_array);
-	
-					try {
-						if($is_debug){
-							echo "Processing $this_file $class by running \n $this_sql";
-						}
-						
-						$drop_table_sql = "DROP TABLE IF EXISTS $quickrep_cache_db_name._TC_$simple_class";
+                $reflection_of_class = new ReflectionClass($class);
 
-						DB::connection(config('database.statistics'))->statement($drop_table_sql);
+                if (!$reflection_of_class->isAbstract()) {
+                    try {
+                        $report = new $class($Code, $Parameters, $Input);
+                        $sql = $report->getSQL();
+                    } catch (Exception $e) {
+                        $error_array[] = [
+                            'error_type' => 'Report Class Failed to Instantiate',
+                            'error_message' => $e->getMessage(),
+                            'file_with_problem' => $this_file,
+                            'class_with_problem' => $class,
+                        ];
+                        continue; //no need to test sql if we cannot create the class
+                    }
 
-						$this_sql = "CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._TC_$simple_class AS " . $this_sql;
+                    if (!is_array($sql)) {
+                        //we need to make it array so that we always have array..
+                        $sql_array = [$sql];
+                    } else {
+                        $sql_array = $sql;
+                    }
 
-						$stmt = $pdo->query($this_sql); //we just need to know if it runs... 
+                    $success_count = 0;
+                    $fail_count = 0;
+                    foreach ($sql_array as $this_sql) {
+                        $class_array = explode('\\', $class);
+                        $simple_class = array_pop($class_array);
 
-						$success_count++;
+                        try {
+                            if ($is_debug) {
+                                echo "Processing $this_file $class by running \n $this_sql";
+                            }
 
-					} catch(\Exception $e) {
+                            $drop_table_sql = "DROP TABLE IF EXISTS $quickrep_cache_db_name._TC_$simple_class";
 
-						$fail_count++;
+                            DB::connection(config('database.statistics'))->statement($drop_table_sql);
 
-						$error_array[] = [
-							'error_type' => 'SQL Crash',
-							'error_message' => $e->getMessage(),	
-							'sql_with_problem' => $this_sql,
-							'file_with_problem' => $this_file,
-							'class_with_problem' => $class,
-						];
-	
-					}
-			
+                            $this_sql = "CREATE TABLE IF NOT EXISTS $quickrep_cache_db_name._TC_$simple_class AS " . $this_sql;
 
-				} //end loop over sql_array
-			}else{
-				echo "$this_file $class is an abstract class... not testing\n";
-			}
-		} //end test_cases loop
-	}//end loop over file_list
+                            $stmt = $pdo->query($this_sql); //we just need to know if it runs...
 
-	if(count($error_array) == 0){
-		echo "All Reports worked!!\n";
-	}else{
-		echo "The following reports had problems..\n";
-		foreach($error_array as $this_error){
-			
-			//prep for the database..
-			foreach($this_error as $key => $value){
-				$this_error[$key] = $pdo->quote($value); //should fix escape related problems... important since we are inserting SQL...
-			}
-		
-			$error_type = $this_error['error_type'];
-			$error_message = $this_error['error_message'];
-			if(isset($this_error['sql_with_problem'])){
-				$sql_with_problem = $this_error['sql_with_problem'];
-			}else{
-				$sql_with_problem = "''";
-			}
+                            $success_count++;
+                        } catch (Exception $e) {
+                            $fail_count++;
 
-			$file_with_problem = $this_error['file_with_problem'];
-			$class_with_problem = $this_error['class_with_problem'];
+                            $error_array[] = [
+                                'error_type' => 'SQL Crash',
+                                'error_message' => $e->getMessage(),
+                                'sql_with_problem' => $this_sql,
+                                'file_with_problem' => $this_file,
+                                'class_with_problem' => $class,
+                            ];
+                        }
+                    } //end loop over sql_array
+                } else {
+                    echo "$this_file $class is an abstract class... not testing\n";
+                }
+            } //end test_cases loop
+        }//end loop over file_list
 
-			$insert_log_sql = "
+        if (count($error_array) == 0) {
+            echo "All Reports worked!!\n";
+        } else {
+            echo "The following reports had problems..\n";
+            foreach ($error_array as $this_error) {
+                //prep for the database..
+                foreach ($this_error as $key => $value) {
+                    $this_error[$key] = $pdo->quote(
+                        $value
+                    ); //should fix escape related problems... important since we are inserting SQL...
+                }
+
+                $error_type = $this_error['error_type'];
+                $error_message = $this_error['error_message'];
+                if (isset($this_error['sql_with_problem'])) {
+                    $sql_with_problem = $this_error['sql_with_problem'];
+                } else {
+                    $sql_with_problem = "''";
+                }
+
+                $file_with_problem = $this_error['file_with_problem'];
+                $class_with_problem = $this_error['class_with_problem'];
+
+                $insert_log_sql = "
 INSERT INTO $quickrep_cache_db_name._ReportTestLog 
 	(`id`, `error_type`, 
 	`error_message`, `file_with_problem`, 
@@ -251,16 +250,15 @@ VALUES
 	CURRENT_TIME(), CURRENT_TIME());
 ";
 
-			//echo "Running\n$insert_log_sql\n";
+                //echo "Running\n$insert_log_sql\n";
 
-			DB::connection(config('database.statistics'))->statement($insert_log_sql);
+                DB::connection(config('database.statistics'))->statement($insert_log_sql);
 
-			echo "$file_with_problem\n\t\t$error_message\n";
-		
-		}
-	}
+                echo "$file_with_problem\n\t\t$error_message\n";
+            }
+        }
 
-	$sql_mode_sql = "
+        $sql_mode_sql = "
 SELECT 
 	@@sql_mode AS just_sql_mode,
 	@@SESSION.sql_mode AS session_sql_mode,
@@ -268,12 +266,9 @@ SELECT
 ;
 ";
 
-	$stmt = $pdo->query($sql_mode_sql);
-	$results = $stmt->fetchAll();
+        $stmt = $pdo->query($sql_mode_sql);
+        $results = $stmt->fetchAll();
 
-	var_export($results);
-	
-
-
+        var_export($results);
     }
 }

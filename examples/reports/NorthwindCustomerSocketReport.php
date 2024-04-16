@@ -10,7 +10,7 @@ class NorthwindCustomerSocketReport extends ParentTabularReport
     */
     public function GetReportName(): string
     {
-	return('Quickrep Demo: NorthWind Customer Socket Report');
+        return ('Quickrep Demo: NorthWind Customer Socket Report');
     }
 
     /*
@@ -18,7 +18,6 @@ class NorthwindCustomerSocketReport extends ParentTabularReport
     */
     public function GetReportDescription(): ?string
     {
-
         return "This is the customer database filtered using the socket/wrench system which can be configured 
             using the `Data Options` button on the UI
 <br>
@@ -33,31 +32,29 @@ What to test here:
 	<li> Confirm that when you download the csv file, you are downloading with the data options applied </li>
 </ul>
 ";
-
     }
 
-	/**
-    * This is what builds the report. It will accept a SQL statement or an Array of sql statements.
-    * Can be used in conjunction with Inputs to determine different output based on URI parameters
-    * Additional URI parameters are passed as
-    *	$this->getCode() - which will give the first url segment after the report name
-    *   $this->getParameters() - which will give an array of every later url segment after the getCode value
-    *   $this->getInput() - which will give _GET parameters (etc?)
-    **/
+    /**
+     * This is what builds the report. It will accept a SQL statement or an Array of sql statements.
+     * Can be used in conjunction with Inputs to determine different output based on URI parameters
+     * Additional URI parameters are passed as
+     *    $this->getCode() - which will give the first url segment after the report name
+     *   $this->getParameters() - which will give an array of every later url segment after the getCode value
+     *   $this->getInput() - which will give _GET parameters (etc?)
+     **/
     public function GetSQL()
     {
+        $customer_id = $this->getCode();
 
-	$customer_id = $this->getCode();
 
+        $filters = [];
+        $filters[] = $this->getSocket('job_title_filter');
+        $filters[] = $this->getSocket('big_state_filter');
 
-	$filters = [];
-	$filters[] = $this->getSocket('job_title_filter');
-	$filters[] = $this->getSocket('big_state_filter');
-
-	if(!is_numeric($customer_id)){
-		//this means that there was no customer_id passed in on the url...
-		//so we have a SQL that will return all of the customers information
-        	$sql = "
+        if (!is_numeric($customer_id)) {
+            //this means that there was no customer_id passed in on the url...
+            //so we have a SQL that will return all of the customers information
+            $sql = "
 SELECT 
 	customer.id AS customer_id, 
 	companyName, 
@@ -72,20 +69,18 @@ SELECT
 FROM DURC_northwind_model.customer
 ";
 
-		$where_then_and = ' WHERE ';
+            $where_then_and = ' WHERE ';
 
-		foreach($filters as $this_filter){
-			if($this_filter){ //blank  strings will not be used, etc
-				$sql .= " $where_then_and $this_filter"; 	
-			
-				$where_then_and = "\n AND "; //we only need the WHERE on the first filter, but we need AND after that
-			}
-		}
+            foreach ($filters as $this_filter) {
+                if ($this_filter) { //blank  strings will not be used, etc
+                    $sql .= " $where_then_and $this_filter";
 
-	
-	}else{
-		//here we know that $customer_id is numeric, and we should search the database for a mathing customer
-        $sql = "
+                    $where_then_and = "\n AND "; //we only need the WHERE on the first filter, but we need AND after that
+                }
+            }
+        } else {
+            //here we know that $customer_id is numeric, and we should search the database for a mathing customer
+            $sql = "
 SELECT
 	customer.id AS customer_id, 
 	companyName, 
@@ -100,41 +95,39 @@ SELECT
 FROM DURC_northwind_model.customer
 WHERE customer.id = '$customer_id'
 ";
+        }
 
-	}
+        $is_debug = false;
 
-	$is_debug = false;
+        if ($is_debug) {
+            echo "<pre> $sql";
+            exit();
+        }
 
-	if($is_debug){
-		echo "<pre> $sql";
-		exit();
-	}
-
-    	return $sql;
+        return $sql;
     }
 
 
     /**
-    * Each row content will be passed to MapRow.
-    * Values and header names can be changed.
-    * Columns cannot be added or removed
-    *
-    */
-    public function MapRow(array $row, int $row_number) :array
+     * Each row content will be passed to MapRow.
+     * Values and header names can be changed.
+     * Columns cannot be added or removed
+     *
+     */
+    public function MapRow(array $row, int $row_number): array
     {
+        /*
+        //this logic would ensure that every cell in the TABLE_NAME column, was converted to a link to
+        //a table drilldown report
+        $table_name = $row['TABLE_NAME'];
+        $row[''] = "<a href='/Quickrep/TableDrillDownReport/$table_name/'>$table_name</a>";
 
-    	/*
-		//this logic would ensure that every cell in the TABLE_NAME column, was converted to a link to
-		//a table drilldown report
-		$table_name = $row['TABLE_NAME'];
-		$row[''] = "<a href='/Quickrep/TableDrillDownReport/$table_name/'>$table_name</a>";
-
-	*/
+    */
 
         return $row;
     }
 
-	//look in ParentTabularReport.php for more settings
+    //look in ParentTabularReport.php for more settings
 
 
 }

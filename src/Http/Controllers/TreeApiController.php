@@ -9,20 +9,20 @@ use Owlookit\Quickrep\Reports\Tree\TreeReportSummaryGenerator;
 
 class TreeApiController
 {
-    public function index( QuickrepRequest $request )
+    public function index(QuickrepRequest $request)
     {
         $report = $request->buildReport();
-        $cache = new CachedTreeReport( $report, quickrep_cache_db() );
-        $generator = new TreeReportGenerator( $cache );
+        $cache = new CachedTreeReport($report, quickrep_cache_db());
+        $generator = new TreeReportGenerator($cache);
         return $generator->toJson();
     }
 
-    public function summary( QuickrepRequest $request )
+    public function summary(QuickrepRequest $request)
     {
         $report = $request->buildReport();
         // Wrap the report in cache
-        $cache = new CachedTreeReport( $report, quickrep_cache_db() );
-        $generator = new TreeReportSummaryGenerator( $cache );
+        $cache = new CachedTreeReport($report, quickrep_cache_db());
+        $generator = new TreeReportSummaryGenerator($cache);
         return $generator->toJson();
     }
 }

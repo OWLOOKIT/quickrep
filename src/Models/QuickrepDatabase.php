@@ -13,6 +13,7 @@
 namespace Owlookit\Quickrep\Models;
 
 
+use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -20,18 +21,18 @@ use Illuminate\Support\Facades\Schema;
 
 class QuickrepDatabase
 {
-    public static function configure( $database )
+    public static function configure($database)
     {
         //
-        $default = config( 'database.statistics' );
-        Config::set( 'database.connections.'.$database, [
-            'driver' => config( "database.connections.$default.driver" ),
-            'host' => config( "database.connections.$default.host" ),
-            'port' => config( "database.connections.$default.port" ),
-            'database' => config( "database.connections.$default.database" ),
-            'username' => config( "database.connections.$default.username" ),
-            'password' => config( "database.connections.$default.password" ),
-        ] );
+        $default = config('database.statistics');
+        Config::set('database.connections.' . $database, [
+            'driver' => config("database.connections.$default.driver"),
+            'host' => config("database.connections.$default.host"),
+            'port' => config("database.connections.$default.port"),
+            'database' => config("database.connections.$default.database"),
+            'username' => config("database.connections.$default.username"),
+            'password' => config("database.connections.$default.password"),
+        ]);
 
         // @TODO: make a MySQL fallback
         // Set the max concat length for cache DB to be A LOT
@@ -45,35 +46,35 @@ class QuickrepDatabase
         // $pdo->exec($session_set_sql);
     }
 
-    public static function hasTable( $table_name, $connectionName )
+    public static function hasTable($table_name, $connectionName)
     {
-        return Schema::connection( $connectionName )->hasTable( $table_name );
+        return Schema::connection($connectionName)->hasTable($table_name);
     }
-
-    public static function drop( $table_name, $connectionName )
-    {
-        return Schema::connection( $connectionName )->drop( $table_name );
-    }
-
 
     public static function connection($connectionName)
     {
         try {
             return DB::connection($connectionName);
-        } catch(\Exception $e) {
-            $message = $e->getMessage()." You may have a permissions error with your database user. Please Refer to the Quickrep troubleshooting guide <a href='https://github.com/Owlookit/Quickrep#troubleshooting'>https://github.com/Owlookit/Quickrep#troubleshooting</a>";
-            throw new \Exception($message, (int) $e->getCode(), $e);
+        } catch (Exception $e) {
+            $message = $e->getMessage(
+                ) . " You may have a permissions error with your database user. Please Refer to the Quickrep troubleshooting guide <a href='https://github.com/Owlookit/Quickrep#troubleshooting'>https://github.com/Owlookit/Quickrep#troubleshooting</a>";
+            throw new Exception($message, (int)$e->getCode(), $e);
         }
+    }
+
+    public static function drop($table_name, $connectionName)
+    {
+        return Schema::connection($connectionName)->drop($table_name);
     }
 
     /**
      * @param $database
      * @return bool|null
-     * @throws \Exception
+     * @throws Exception
      *
      * Returns true if DB exists, and false if it does not, NULL if the state of existence cannot be determined.
      */
-    public static function doesDatabaseExist( $database )
+    public static function doesDatabaseExist($database)
     {
         // @TODO: MySQL fallback
 //        $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME =  ?";
@@ -85,32 +86,40 @@ class QuickrepDatabase
 //        config(["database.connections.mysql.database" => null]);
 
         try {
-            $db = DB::connection(config('database.statistics'))->select( $query, [ $database ] );
-        } catch ( \Exception $e ) {
-
+            $db = DB::connection(config('database.statistics'))->select($query, [$database]);
+        } catch (Exception $e) {
             if ($e->getCode() == 1049) {
                 // If the database in our configuration file doesn't exist, we have a problem,
                 // So let's blow up.
-                throw new \Exception($e->getMessage()."\n\nPlease make sure the database in your .env file exists.", (int) $e->getCode());
-            } else if ($e->getCode() == 1045) {
-                // If the user doens't have authorization, we have a problem.
-                $default = config( 'database.default' ); // Get default connection
-                $username = config( "database.connections.$default.username" ); // Get username for default connection
-                $message = "\n\nPlease check your user credentials and permissions and try again. Here are some suggestions:";
-                $message .= "\n* `$username` may not exist.";
-                $message .= "\n* `$username` may have the incorrect password in your .env file.";
-                throw new \Exception($e->getMessage().$message, (int) $e->getCode());
-            } else if ($e->getCode() == 1044) {
-                // Access Denied
-                $default = config( 'database.default' ); // Get default connection
-                $default_db = config( "database.connections.$default.database" );
-                $username = config( "database.connections.$default.username" ); // Get username for default connection
-                $message = "\n\nPlease make sure that your mysql user in your .env file has permissions on `$default_db`.";
-                $message .= "\n* Run this mysql command to list users who have access:\n";
-                $message .= "\tSELECT user from mysql.db where db='$default_db';"; // SHOW GRANTS FOR ken@localhost;;
-                $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
-                $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$default_db`.* TO '$username'@'localhost';\n";
-                throw new \Exception($e->getMessage().$message, (int) $e->getCode());
+                throw new Exception(
+                    $e->getMessage() . "\n\nPlease make sure the database in your .env file exists.",
+                    (int)$e->getCode()
+                );
+            } else {
+                if ($e->getCode() == 1045) {
+                    // If the user doens't have authorization, we have a problem.
+                    $default = config('database.default'); // Get default connection
+                    $username = config("database.connections.$default.username"); // Get username for default connection
+                    $message = "\n\nPlease check your user credentials and permissions and try again. Here are some suggestions:";
+                    $message .= "\n* `$username` may not exist.";
+                    $message .= "\n* `$username` may have the incorrect password in your .env file.";
+                    throw new Exception($e->getMessage() . $message, (int)$e->getCode());
+                } else {
+                    if ($e->getCode() == 1044) {
+                        // Access Denied
+                        $default = config('database.default'); // Get default connection
+                        $default_db = config("database.connections.$default.database");
+                        $username = config(
+                            "database.connections.$default.username"
+                        ); // Get username for default connection
+                        $message = "\n\nPlease make sure that your mysql user in your .env file has permissions on `$default_db`.";
+                        $message .= "\n* Run this mysql command to list users who have access:\n";
+                        $message .= "\tSELECT user from mysql.db where db='$default_db';"; // SHOW GRANTS FOR ken@localhost;;
+                        $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
+                        $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$default_db`.* TO '$username'@'localhost';\n";
+                        throw new Exception($e->getMessage() . $message, (int)$e->getCode());
+                    }
+                }
             }
 
             $db = null;
@@ -122,7 +131,7 @@ class QuickrepDatabase
 
         // The DB exists if the schema name in the query matches our database
         $db_exists = false;
-        if ( is_array($db) &&
+        if (is_array($db) &&
             isset($db[0]) &&
             $db[0]->datname == $database
 //            $db[0]->SCHEMA_NAME == $database // @TODO: test a MySQL fallback
@@ -131,7 +140,7 @@ class QuickrepDatabase
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
             try {
-                if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+                if (\DB::connection(config('database.statistics'))->getDriverName() == 'pgsql') {
                     $query = <<<SQL
 DO $$ DECLARE
     r RECORD;
@@ -145,18 +154,18 @@ SQL;
                 } else {
                     $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
                 }
-                DB::connection(config('database.statistics'))->statement( $query );
-            } catch ( \Exception $e ) {
-                $default = config( 'database.statistics' ); // Get default connection
-                $username = config( "database.connections.$default.username" ); // Get username for default connection
+                DB::connection(config('database.statistics'))->statement($query);
+            } catch (Exception $e) {
+                $default = config('database.statistics'); // Get default connection
+                $username = config("database.connections.$default.username"); // Get username for default connection
                 $message = "\n\nYou may not have permission to the database `$database` to query its existence.";
                 $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
                 $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$database`.* TO '$username'@'localhost';\n";
-                throw new \Exception($e->getMessage().$message, (int) $e->getCode());
+                throw new Exception($e->getMessage() . $message, (int)$e->getCode());
             }
         }
 
-        if (\DB::connection(config('database.statistics'))->getDriverName()=='pgsql') {
+        if (\DB::connection(config('database.statistics'))->getDriverName() == 'pgsql') {
             # @TODO: refactor this to avoid deadlocks
             # https://stackoverflow.com/questions/40728788/drop-foreign-schema-in-postgresql-using-a-foreign-data-wrapper
             $query = <<<SQL
@@ -196,6 +205,41 @@ SQL;
         }
 
         return null;
+    }
+
+    /**
+     * getTableColumnDefinition
+     * Get the column name and the basic column data type (integer, decimal, string)
+     *
+     * @return array
+     */
+    public static function getTableColumnDefinition($table_name, $connectionName): array
+    {
+        // @TODO: make a MySQL fallback
+        // $query = "SHOW COLUMNS FROM {$table_name}";
+        $table_name = strtolower($table_name);
+        $query = <<<SQL
+                    SELECT *
+                      FROM information_schema.columns
+                     WHERE table_schema = 'application'
+                       AND table_name   = '{$table_name}';
+SQL;
+        $result = self::connection($connectionName)->select($query);
+        if ($result) {
+            $column_meta = [];
+            foreach ($result as $column) {
+                $column_meta[$column->column_name] = [
+//                    'Name' => $column->Field,
+//                    'Type' => self::basicTypeFromNativeType($column->Type),
+                    'name' => $column->column_name,
+                    'type' => self::basicTypeFromNativeType($column->data_type),
+                ];
+            }
+        } else {
+            throw new Exception("Could not execute `SHOW COLUMNS FROM {$table_name}`");
+        }
+
+        return $column_meta;
     }
 
     /**
@@ -244,41 +288,6 @@ SQL;
     }
 
     /**
-     * getTableColumnDefinition
-     * Get the column name and the basic column data type (integer, decimal, string)
-     *
-     * @return array
-     */
-    public static function getTableColumnDefinition( $table_name, $connectionName ): array
-    {
-        // @TODO: make a MySQL fallback
-        // $query = "SHOW COLUMNS FROM {$table_name}";
-        $table_name = strtolower($table_name);
-        $query = <<<SQL
-                    SELECT *
-                      FROM information_schema.columns
-                     WHERE table_schema = 'application'
-                       AND table_name   = '{$table_name}';
-SQL;
-        $result = self::connection($connectionName)->select($query);
-        if ($result) {
-            $column_meta = [];
-            foreach ($result as $column) {
-                $column_meta[$column->column_name] = [
-//                    'Name' => $column->Field,
-//                    'Type' => self::basicTypeFromNativeType($column->Type),
-                    'name' => $column->column_name,
-                    'type' => self::basicTypeFromNativeType($column->data_type),
-                ];
-            }
-        } else {
-            throw new \Exception("Could not execute `SHOW COLUMNS FROM {$table_name}`");
-        }
-
-        return $column_meta;
-    }
-
-    /**
      * isColumnInKeyArray
      * * Will take a column name and convert it into a word array to be passed to isWordInArray
      *
@@ -322,7 +331,6 @@ SQL;
             if (in_array($value, $needles) || $value == $full_needle) {
                 return true;
             }
-
         }
         return false;
     }

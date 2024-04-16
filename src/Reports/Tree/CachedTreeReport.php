@@ -9,10 +9,10 @@
 namespace Owlookit\Quickrep\Reports\Tree;
 
 
+use DB;
 use Owlookit\Quickrep\Models\DatabaseCache;
-use Owlookit\Quickrep\Models\QuickrepReport;
 use Owlookit\Quickrep\Models\QuickrepDatabase;
-use \DB;
+use Owlookit\Quickrep\Models\QuickrepReport;
 
 class CachedTreeReport extends DatabaseCache
 {
@@ -28,7 +28,6 @@ class CachedTreeReport extends DatabaseCache
      */
     public function __construct(AbstractTreeReport $report, $connectionName)
     {
-
         // create cache tables, the logic in handled in the superclass constructor, and it only generates new table if required
         // If we are rebuilding the cache in this request, the parent will generate a table with the results from the report's
         // GetSQL() function query. Then, we generate the auxillary graph cache tables below
@@ -38,8 +37,8 @@ class CachedTreeReport extends DatabaseCache
         $cache_table_name_key = $this->getKey();
         $this->tree_table = "nodes_$cache_table_name_key";
 
-	//TODO this should come from configuration if the configuration is set...
-	$this->cache_db = '_quickrep_cache'; 
+        //TODO this should come from configuration if the configuration is set...
+        $this->cache_db = '_quickrep_cache';
 
         // Only generate the aux tables (drop and re-create) if dictated by cache rules
         if ($this->getGeneratedThisRequest() === true) {
@@ -52,14 +51,13 @@ class CachedTreeReport extends DatabaseCache
         $start_time = microtime(true);
         $sql = [];
 
-    //    $sql['delete current tree table'] = "DROP TABLE IF EXISTS $this-$this->tree_table;";
+        //    $sql['delete current tree table'] = "DROP TABLE IF EXISTS $this-$this->tree_table;";
 
-	//this is work needed to be done to prep the cache to serve our specific report, beyond just merging all of the GetSQL() resuls
-	//which is actually done in the parent... 
+        //this is work needed to be done to prep the cache to serve our specific report, beyond just merging all of the GetSQL() resuls
+        //which is actually done in the parent...
 
         foreach ($sql as $this_sql) {
             QuickrepDatabase::connection($this->getConnectionName())->statement(DB::raw($this_sql));
         }
-
     }
 }
