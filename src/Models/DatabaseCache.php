@@ -70,7 +70,7 @@ class DatabaseCache
                 $this->getDoClearCache() == true ||
                 $this->isCacheExpired() === true) {
                 //if any of the above is true, then we need to re-run the create table.
-                $this->createTable();
+//                $this->createTable();
                 $this->generatedThisRequest = true;
             }
         }
@@ -138,7 +138,7 @@ class DatabaseCache
 
     public function isCacheExpired()
     {
-        return false;
+        return Carbon::now()->setTimezone($this->timezone)->gte($this->getExpireTime());
     }
 
     public function MapRow(array $row, int $row_number)
