@@ -3,11 +3,8 @@
 namespace Owlookit\Quickrep\Models;
 
 use Carbon\Carbon;
-use Exception;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Owlookit\Quickrep\Exceptions\InvalidDatabaseTableException;
-use PDOException;
 
 class DatabaseCache
 {
@@ -47,7 +44,7 @@ class DatabaseCache
                 // if we're overriding we have to explicitly configure the new cache DB for access
                 try {
                     QuickrepDatabase::configure($this->connectionName);
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     throw new InvalidDatabaseTableException(
                         "You attempted to override the cache database with `{$this->connectionName}` but the database does not exist or you do not have permission to access it"
                     );
@@ -81,23 +78,47 @@ class DatabaseCache
         // Get the column names from the cache/result table
         try {
             $this->columns = QuickrepDatabase::getTableColumnDefinition($this->getTableName(), $this->connectionName);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw new InvalidDatabaseTableException(
                 "You attempted access a table `{$this->getTableName()}` on database `{$this->connectionName}` but the table does not exist or you do not have permission to access it"
             );
         }
     }
 
-    protected function keygen($prefix = "")
+    public function getConnectionName()
     {
-        $key = $this->report->getDataIdentityKey($prefix);
-        return $key;
+        return $this->connectionName;
     }
 
     /*
         This function generates the name of the cache table.
         It refers to the getDataIdentityKey() function on the report...
     */
+    protected function keygen($prefix = "")
+    {
+        $key = $this->report->getDataIdentityKey($prefix);
+        return $key;
+    }
+
+    public function getKey()
+    {
+        return $this->key;
+    }
+
+    public function getTable()
+    {
+        return $this->cache_table;
+    }
+
+    public function getTableName()
+    {
+        return $this->cache_table->from;
+    }
+
+    public function getReport()
+    {
+        return $this->report;
+    }
 
     public function exists(): bool
     {
@@ -105,14 +126,14 @@ class DatabaseCache
         return $hasTable;
     }
 
-    public function getDoClearCache()
-    {
-        return $this->doClearCache;
-    }
-
     public function setDoClearCache($doClearCache)
     {
         $this->doClearCache = $doClearCache;
+    }
+
+    public function getDoClearCache()
+    {
+        return $this->doClearCache;
     }
 
     public function isCacheExpired()
@@ -130,59 +151,60 @@ class DatabaseCache
         return Carbon::now()->setTimezone($this->timezone)->gte($expireTime);
     }
 
-    public function getExpireTime()
+    public function MapRow(array $row, int $row_number)
     {
-        $expireTime = false;
-
-        if ($this->report->isCacheEnabled()) {
-            $expireTimeCarbon = Carbon::parse($this->getLastGenerated())->setTimezone($this->timezone)->addSeconds(
-                $this->report->howLongToCacheInSeconds()
-            );
-            $expireTime = date('Y-m-d H:i:s', $expireTimeCarbon->timestamp);
-        }
-
-        return $expireTime;
+        return $this->report->MapRow($row, $row_number);
     }
 
-    /**
-     *  Get the formatted time when this cache was last created
-     *
-     * @return false|string
-     */
-    public function getLastGenerated()
+    public function OverrideHeader(array &$format, array &$tags, ?array &$I18n = []): void
     {
-        $tableName = $this->getTableName();
-        $schemaName = 'application';
-        $qualifiedTableName = "{$schemaName}.{$tableName}";
-        $query = "SELECT obj_description('{$qualifiedTableName}'::regclass, 'pg_class') as comment";
-
-        // get the table comment with the creation date
-        try {
-            $commentQuery = $this->pdo->query($query)->fetchAll();
-            $comment = $commentQuery[0]["comment"] ?? null;
-        } catch (PDOException $e) {
-            return true;
-        }
-
-        if (!$comment) {
-            return true;
-        }
-
-        // parse the comment to get the created_at date
-        preg_match('/created_at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $comment, $matches);
-        $dateTimeString = $matches[1] ?? null;
-
-        if (!$dateTimeString) {
-            return true;
-        }
-
-        // convert the date string to a Carbon object
-        return Carbon::createFromFormat('Y-m-d H:i:s', $dateTimeString)->toDateTimeString();
+        $this->report->OverrideHeader($format, $tags, $I18n);
     }
 
-    public function getTableName()
+    /*
+        getIndividualQueries() serves to ensure that the SQL returned by an individual report always takes the same structure
+        inside the reporting engine.
+
+        Basically, its job is to ensure that it returns an array of SQL singletons.
+
+
+    */
+    public function getIndividualQueries()
     {
-        return $this->cache_table->from;
+        $sql = $this->report->GetSQL();
+
+        if (!$sql) {
+            return false;
+        }
+
+        $all_queries = [];
+        if (!is_array($sql)) {
+            // we must always return an array. If a report returns a single SQL statement, lets tuck it into an array with just one member
+            $sql = [$sql];
+        }
+
+        /*
+	It is possible for single sql text field to contain multiple SQL queries seperated by semicolons.
+	But we really want an array with elements of single SQL statements
+        break up each queries by semi colon,
+        we will run each query separately
+         */
+        foreach ($sql as $query) {
+            $query = explode(";", $query);
+            foreach ($query as $single_query) {
+                if (!empty(trim($single_query))) {
+                    $all_queries[] = trim($single_query);
+                }
+            }
+        }
+
+        //this will always be an array with singleton SQL statements. or false.
+        return $all_queries;
+    }
+
+    public function getColumns()
+    {
+        return $this->columns;
     }
 
     /**
@@ -195,33 +217,33 @@ class DatabaseCache
         $temp_cache_table = clone $this->cache_table;
 
         //we are starting over, so if the table exists.. lets drop it.
-        if ($this->exists()) {
-            $this->pdo->exec("DROP TABLE IF EXISTS application.{$temp_cache_table->from}");
-        }
+//        if ($this->exists()) {
+        $this->pdo->exec("DROP TABLE IF EXISTS application.{$temp_cache_table->from}");
+//        }
 
         //now we will loop over all the SQL queries that make up the report.
 
         $queries = $this->getIndividualQueries();
 
         if ($queries) {
-            $currentDateTime = Carbon::now()->setTimezone($this->timezone)->format('Y-m-d H:i:s');
-            $commentText = "created_at: {$currentDateTime}";
-            $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
-
             //just in case someone uses an associated array...
             $indexed_queries = array_values($queries);
             foreach ($indexed_queries as $index => $query) {
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
                     if ($index == 0) {
                         //for the first query, we use a CREATE TABLE statement
+                        $currentDateTime = Carbon::now()->setTimezone($this->timezone)->format('Y-m-d H:i:s');
+                        $commentText = "created_at: {$currentDateTime}";
+                        $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
                         $createTableSql = "CREATE TABLE IF NOT EXISTS application.{$temp_cache_table->from} AS {$query}";
                         try {
                             $this->pdo->beginTransaction();
                             $this->pdo->query($createTableSql);
-                            $this->pdo->query($commentSql);
                             $this->pdo->commit();
                         } catch (PDOException $e) {
                             $this->pdo->rollBack();
+                        } finally {
+                            $this->pdo->exec($commentSql);
                         }
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
@@ -230,7 +252,7 @@ class DatabaseCache
                             $this->pdo->exec($insert_sql);
                             //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
                             //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
-                        } catch (QueryException $ex) {
+                        } catch (\Illuminate\Database\QueryException $ex) {
                             //these database errors deserve better human readable responses...
                             //they are common problems with Quickrep reports..
                             //so lets catch them and make sure that they are clear to end users..
@@ -255,7 +277,7 @@ The specific error message from the database was:
                             foreach ($messages_to_filter as $find_me => $say_me) {
                                 if (strpos($original_message, $find_me) !== false) {
                                     $new_message = $say_me . $original_message;
-                                    throw new Exception($new_message);
+                                    throw new \Exception($new_message);
                                 }
                             }
 
@@ -307,81 +329,54 @@ The specific error message from the database was:
         }
     }
 
-    public function getIndividualQueries()
+    /**
+     *  Get the formatted time when this cache was last created
+     *
+     * @return false|string
+     */
+    public function getLastGenerated()
     {
-        $sql = $this->report->GetSQL();
+        $tableName = $this->getTableName();
+        $schemaName = 'application';
+        $qualifiedTableName = "{$schemaName}.{$tableName}";
+        $query = "SELECT obj_description('{$qualifiedTableName}'::regclass, 'pg_class') as comment";
 
-        if (!$sql) {
-            return false;
+        // get the table comment with the creation date
+        try {
+            $commentQuery = $this->pdo->query($query)->fetchAll();
+            $comment = $commentQuery[0]["comment"] ?? null;
+        } catch (\PDOException $e) {
+            return true;
         }
 
-        $all_queries = [];
-        if (!is_array($sql)) {
-            // we must always return an array. If a report returns a single SQL statement, lets tuck it into an array with just one member
-            $sql = [$sql];
+        if (!$comment) {
+            return true;
         }
 
-        /*
-	It is possible for single sql text field to contain multiple SQL queries seperated by semicolons.
-	But we really want an array with elements of single SQL statements
-        break up each queries by semi colon,
-        we will run each query separately
-         */
-        foreach ($sql as $query) {
-            $query = explode(";", $query);
-            foreach ($query as $single_query) {
-                if (!empty(trim($single_query))) {
-                    $all_queries[] = trim($single_query);
-                }
-            }
+        // parse the comment to get the created_at date
+        preg_match('/created_at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $comment, $matches);
+        $dateTimeString = $matches[1] ?? null;
+
+        if (!$dateTimeString) {
+            return true;
         }
 
-        //this will always be an array with singleton SQL statements. or false.
-        return $all_queries;
+        // convert the date string to a Carbon object
+        return Carbon::createFromFormat('Y-m-d H:i:s', $dateTimeString)->toDateTimeString();
     }
 
-    public function getConnectionName()
+    public function getExpireTime()
     {
-        return $this->connectionName;
-    }
+        $expireTime = false;
 
-    public function getKey()
-    {
-        return $this->key;
-    }
+        if ($this->report->isCacheEnabled()) {
+            $expireTimeCarbon = Carbon::parse($this->getLastGenerated())->setTimezone($this->timezone)->addSeconds(
+                $this->report->howLongToCacheInSeconds()
+            );
+            $expireTime = date('Y-m-d H:i:s', $expireTimeCarbon->timestamp);
+        }
 
-    /*
-        getIndividualQueries() serves to ensure that the SQL returned by an individual report always takes the same structure
-        inside the reporting engine.
-
-        Basically, its job is to ensure that it returns an array of SQL singletons.
-
-
-    */
-
-    public function getTable()
-    {
-        return $this->cache_table;
-    }
-
-    public function getReport()
-    {
-        return $this->report;
-    }
-
-    public function MapRow(array $row, int $row_number)
-    {
-        return $this->report->MapRow($row, $row_number);
-    }
-
-    public function OverrideHeader(array &$format, array &$tags, ?array &$I18n = []): void
-    {
-        $this->report->OverrideHeader($format, $tags, $I18n);
-    }
-
-    public function getColumns()
-    {
-        return $this->columns;
+        return $expireTime;
     }
 
     public function getGeneratedThisRequest()
