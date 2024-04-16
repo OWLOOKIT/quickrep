@@ -146,9 +146,7 @@ class DatabaseCache
             return true;
         }
 
-        $now = Carbon::now()->setTimezone($this->timezone);
-
-        return $now->gte($expireTime);
+        return Carbon::now()->setTimezone($this->timezone)->gte($expireTime);
     }
 
     public function MapRow(array $row, int $row_number)
@@ -219,7 +217,7 @@ class DatabaseCache
 
         //we are starting over, so if the table exists.. lets drop it.
         if ($this->exists()) {
-            QuickrepDatabase::drop($this->cache_table->from, $this->connectionName);
+            $this->pdo->exec("DROP TABLE IF EXISTS {$temp_cache_table->from}");
         }
 
         //now we will loop over all the SQL queries that make up the report.
@@ -230,7 +228,6 @@ class DatabaseCache
 
             $currentDateTime = Carbon::now()->setTimezone($this->timezone)->format('Y-m-d H:i:s');
             $commentText = "created_at: {$currentDateTime}";
-            // SQL to add comment to the table with the creation date (PostgreSQL)
             $commentSql = "COMMENT ON TABLE application.{$temp_cache_table->from} IS '$commentText'";
 
             //just in case someone uses an associated array...
@@ -240,11 +237,7 @@ class DatabaseCache
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
                     if ($index == 0) {
                         //for the first query, we use a CREATE TABLE statement
-                        //QuickrepDatabase::connection($this->connectionName)->getPdo()->exec("CREATE TABLE {$temp_cache_table->from} AS {$query}");
-                        //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("CREATE TABLE {$temp_cache_table->from} AS {$query}"));
-
                         $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
-
                         try {
                             $this->pdo->beginTransaction();
                             $this->pdo->query($createTableSql);
@@ -253,7 +246,6 @@ class DatabaseCache
                         } catch (PDOException $e) {
                             $this->pdo->rollBack();
                         }
-
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
                         try {
