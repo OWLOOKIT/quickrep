@@ -217,7 +217,7 @@ class DatabaseCache
 
         //we are starting over, so if the table exists.. lets drop it.
         if ($this->exists()) {
-            $this->pdo->exec("DROP TABLE IF EXISTS {$temp_cache_table->from}");
+            $this->pdo->exec("DROP TABLE IF EXISTS application.{$temp_cache_table->from}");
         }
 
         //now we will loop over all the SQL queries that make up the report.
@@ -237,7 +237,7 @@ class DatabaseCache
                 if (strpos(strtoupper($query), "SELECT", 0) === 0) {
                     if ($index == 0) {
                         //for the first query, we use a CREATE TABLE statement
-                        $createTableSql = "CREATE TABLE IF NOT EXISTS {$temp_cache_table->from} AS {$query}";
+                        $createTableSql = "CREATE TABLE IF NOT EXISTS application.{$temp_cache_table->from} AS {$query}";
                         try {
                             $this->pdo->beginTransaction();
                             $this->pdo->query($createTableSql);
@@ -249,7 +249,7 @@ class DatabaseCache
                     } else {
                         //for all subsequent queries we use INSERT INTO to merely add data to the table in question..
                         try {
-                            $insert_sql = "INSERT INTO {$temp_cache_table->from} {$query}";
+                            $insert_sql = "INSERT INTO application.{$temp_cache_table->from} {$query}";
                             $this->pdo->exec($insert_sql);
                             //QuickrepDatabase::connection($this->connectionName)->getPdo"INSERT INTO {$temp_cache_table->from} {$query}");
                             //QuickrepDatabase::connection(config( 'database.statistics' ))->statement(DB::raw("INSERT INTO {$temp_cache_table->from} {$query}"));
