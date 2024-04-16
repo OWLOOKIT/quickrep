@@ -65,7 +65,7 @@ class DatabaseCache
             $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
             $this->pdo = QuickrepDatabase::connection($connectionName)->getPdo();
 
-            if (
+            if ($this->exists() === false ||
                 $report->isCacheEnabled() === false ||
                 $this->getDoClearCache() == true ||
                 $this->isCacheExpired() === true) {
