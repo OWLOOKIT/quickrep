@@ -250,9 +250,8 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 //
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement(
-            DB::connection(config('database.statistics'))->raw(
-                <<<SQL
+        DB::connection(config('database.statistics'))->unprepared(
+            <<<SQL
 DO $$ DECLARE
     r RECORD;
 BEGIN
@@ -261,7 +260,6 @@ BEGIN
     END LOOP;
 END $$;
 SQL
-            )
         );
 
         // Write the database name to the master config
@@ -280,9 +278,8 @@ SQL
 //
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
 
-        DB::connection(config('database.statistics'))->statement(
-            DB::connection()->raw(
-                <<<SQL
+        DB::connection(config('database.statistics'))->unprepared(
+            <<<SQL
 DO $$ DECLARE
     r RECORD;
 BEGIN
@@ -291,7 +288,6 @@ BEGIN
     END LOOP;
 END $$;
 SQL
-            )
         );
 
         // Write the database name to the master config
