@@ -1,6 +1,5 @@
 <!-- Data View Modal -->
-<div class="modal fade" id="current_data_view" tabindex="-1" role="dialog" aria-labelledby="current_data_view"
-     aria-hidden="true">
+<div class="modal fade" id="current_data_view" tabindex="-1" role="dialog" aria-labelledby="current_data_view" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <form id="sockets-form" method="post">
@@ -15,35 +14,20 @@
                     @if ($report->hasActiveWrenches())
                         <div class="row">
                             <div class="col-5">
-                                <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist"
-                                     aria-orientation="vertical">
+                                <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                     @foreach ($report->getActiveWrenches() as $wrench)
-                                        <a class="nav-link {{ ($loop->first) ?  'active' : '' }}"
-                                           id="v-pills-{{$wrench->id}}-tab" data-toggle="pill"
-                                           href="#v-pills-{{$wrench->id}}" role="tab"
-                                           aria-controls="v-pills-{{$wrench->id}}"
-                                           aria-selected="true">{{ $wrench->wrench_label }}</a>
+                                        <a class="nav-link {{ ($loop->first) ?  'active' : '' }}" id="v-pills-{{$wrench->id}}-tab" data-toggle="pill" href="#v-pills-{{$wrench->id}}" role="tab" aria-controls="v-pills-{{$wrench->id}}" aria-selected="true">{{ $wrench->wrench_label }}</a>
                                     @endforeach
                                 </div>
                             </div>
                             <div class="col-7">
                                 <div class="tab-content" id="v4-pills-tabContent">
                                     @foreach ($report->getActiveWrenches() as $wrench )
-                                        <div class="tab-pane fade show {{ ($loop->first) ?  'active' : '' }}"
-                                             id="v-pills-{{$wrench->id}}" role="tabpanel"
-                                             aria-labelledby="v-pills-{{$wrench->id}}-tab">
+                                        <div class="tab-pane fade show {{ ($loop->first) ?  'active' : '' }}" id="v-pills-{{$wrench->id}}" role="tabpanel" aria-labelledby="v-pills-{{$wrench->id}}-tab">
                                             @foreach ( $wrench->sockets as $socket )
                                                 <div class="custom-control custom-radio">
-                                                    <input {{ $report->isActiveSocket($socket->id) ? 'checked' : '' }} type="radio"
-                                                           data-wrench-id="{{$wrench->id}}"
-                                                           data-socket-id="{{$socket->id}}"
-                                                           id="wrench-{{$wrench->id}}-socket-{{$socket->id}}"
-                                                           name="sockets[{{$wrench->id}}]" value="{{$socket->id}}"
-                                                           data-wrench-label="{{ $wrench->wrench_label }}"
-                                                           data-socket-label="{{$socket->socket_label}}"
-                                                           class="socket custom-control-input">
-                                                    <label class="custom-control-label"
-                                                           for="wrench-{{$wrench->id}}-socket-{{$socket->id}}">{{$socket->socket_label}}</label>
+                                                    <input {{ $report->isActiveSocket($socket->id) ? 'checked' : '' }} type="radio" data-wrench-id="{{$wrench->id}}" data-socket-id="{{$socket->id}}" id="wrench-{{$wrench->id}}-socket-{{$socket->id}}" name="sockets[{{$wrench->id}}]" value="{{$socket->id}}" data-wrench-label="{{ $wrench->wrench_label }}" data-socket-label="{{$socket->socket_label}}" class="socket custom-control-input">
+                                                    <label class="custom-control-label" for="wrench-{{$wrench->id}}-socket-{{$socket->id}}">{{$socket->socket_label}}</label>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -72,13 +56,13 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-2">
-            <div class="card" style="width: 98%;">
+            <div class="card" style="width: 98%;" >
                 <div class="card-body" style="width: 98%; padding: .25rem;">
                     {{ $report->getReportName() }}
                     <hr>
 
                     @if ($report->hasActiveWrenches())
-                        <button type="button" class="btn btn-primary btn-block view-data-options"> Data Options</button>
+                        <button type="button" class="btn btn-primary btn-block view-data-options"> Data Options </button>
                     @endif
 
                     <br>
@@ -86,71 +70,55 @@
                         <div class="card">
                             <div class="card-header" id="headingTwo">
                                 <h2 class="mb-0">
-                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
-                                            data-target="#collapseTwo" aria-expanded="false"
-                                            aria-controls="collapseTwo">
+                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                                         Layout Options
                                     </button>
                                 </h2>
                             </div>
-                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                                 data-parent="#menuAccordion">
+                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#menuAccordion">
                                 <div class="card-body">
 
                                     Gravity:<br>
-                                    <input id="gravitySlider" type="range" onchange="updateForce();" min="0.01"
-                                           max="0.37" step="0.001" value="0.04">
-                                    <input type="hidden" name='gravityInput' id="gravityInput" value="0.04"><br>
+                                    <input id="gravitySlider" type="range" onchange="updateForce();" min="0.01" max="0.37" step="0.001" value="0.04">
+                                    <input type="hidden" name='gravityInput'  id="gravityInput" value="0.04"><br>
                                     Charge:<br>
-                                    <input id="chargeSlider" type="range" onchange="updateForce();" min="-25000" max="0"
-                                           step="10" value="-3000">
-                                    <input type="hidden" name='chargeInput' id="chargeInput" value="-3000"><br>
+                                    <input id="chargeSlider" type="range" onchange="updateForce();" min="-25000" max="0" step="10" value="-3000">
+                                    <input type="hidden" name='chargeInput'  id="chargeInput" value="-3000"><br>
                                     Zoom:<br>
-                                    <input id="zoomSlider" type="range" onchange="updateForce();" min="0.5" max="5"
-                                           step="0.05" value="1.7">
-                                    <input type="hidden" name='zoomInput' id="zoomInput" value="1.7">
+                                    <input id="zoomSlider" type="range" onchange="updateForce();" min="0.5" max="5" step="0.05" value="1.7">
+                                    <input type="hidden" name='zoomInput'  id="zoomInput" value="1.7">
                                     <br/>
-                                    <input type="checkbox" name="hideLonelyNode" id="hideLonelyNode"
-                                           onchange="updateForce();" value="1"> Hide Lonely Node <br/><br/>
+                                    <input type="checkbox" name="hideLonelyNode" id="hideLonelyNode"  onchange="updateForce();" value="1"> Hide Lonely Node <br/><br/>
 
 
-                                    <button class="btn btn-xs btn-primary" type="button" data-toggle="collapse"
-                                            data-target="#advancedControls" aria-expanded="false"
-                                            aria-controls="collapseExample">
+
+
+                                    <button class="btn btn-xs btn-primary" type="button" data-toggle="collapse" data-target="#advancedControls" aria-expanded="false" aria-controls="collapseExample">
                                         Show Advanced Controls
                                     </button>
 
                                     <div class='collapse' id='advancedControls'>
                                         <div style='display: none'>
                                             linkDistance<br>
-                                            <input id="linkDistanceSlider" type="range" onchange="updateForce();"
-                                                   min="1" max="200" step="1" value="30">
-                                            <input type="hidden" name='linkDistanceInput' id="linkDistanceInput"
-                                                   value="30"><br>
+                                            <input id="linkDistanceSlider" type="range" onchange="updateForce();" min="1" max="200" step="1" value="30">
+                                            <input type="hidden" name='linkDistanceInput' id="linkDistanceInput" value="30"><br>
                                         </div>
 
                                         linkStrength<br>
-                                        <input id="linkStrengthSlider" type="range" onchange="updateForce();"
-                                               min="0.001" max="1" step=".01" value="0.55">
-                                        <input type="hidden" name='linkStrengthInput' id="linkStrengthInput"
-                                               value="0.55"><br>
+                                        <input id="linkStrengthSlider" type="range" onchange="updateForce();" min="0.001" max="1" step=".01" value="0.55">
+                                        <input type="hidden" name='linkStrengthInput' id="linkStrengthInput" value="0.55"><br>
                                         Friction<br>
-                                        <input id="frictionSlider" type="range" onchange="updateForce();" min="0.01"
-                                               max="1" step=".05" value="0.7">
+                                        <input id="frictionSlider" type="range" onchange="updateForce();" min="0.01" max="1" step=".05" value="0.7">
                                         <input type="hidden" name='frictionInput' id="frictionInput" value="0.7"><br>
                                         Charge Distance<br>
-                                        <input id="chargeDistanceSlider" type="range" onchange="updateForce();" min="1"
-                                               max="1000" step="1" value="300">
-                                        <input type="hidden" name='chargeDistanceInput' id="chargeDistanceInput"
-                                               value="300"><br>
+                                        <input id="chargeDistanceSlider" type="range" onchange="updateForce();" min="1" max="1000" step="1" value="300">
+                                        <input type="hidden" name='chargeDistanceInput'  id="chargeDistanceInput" value="300"><br>
                                         Theta<br>
-                                        <input id="thetaSlider" type="range" onchange="updateForce();" min="0.01"
-                                               max="1" step=".05" value="0.35">
-                                        <input type="hidden" name='thetaInput' id="thetaInput" value="0.35"><br>
+                                        <input id="thetaSlider" type="range" onchange="updateForce();" min="0.01" max="1" step=".05" value="0.35">
+                                        <input type="hidden" name='thetaInput'  id="thetaInput" value="0.35"><br>
                                         Alpha<br>
-                                        <input id="alphaSlider" type="range" onchange="updateForce();" min="0.01"
-                                               max="2" step=".1" value="0.5">
-                                        <input type="hidden" name='alphaInput' id="alphaInput" value="0.5"><br>
+                                        <input id="alphaSlider" type="range" onchange="updateForce();" min="0.01" max="2" step=".1" value="0.5">
+                                        <input type="hidden"  name='alphaInput' id="alphaInput" value="0.5"><br>
                                     </div>
                                     <div class="checkbox">
                                         <label>
@@ -165,65 +133,55 @@
                         <div class="card">
                             <div class="card-header" id="headingThree">
                                 <h2 class="mb-0">
-                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
-                                            data-target="#collapseThree" aria-expanded="false"
-                                            aria-controls="collapseThree">
+                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
                                         Animation Options
                                     </button>
                                 </h2>
                             </div>
-                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
-                                 data-parent="#menuAccordion">
+                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#menuAccordion">
                                 <div class="card-body">
 
                                     <!-- Animation Options Form -->
                                     <div class="btn-group-vertical btn-group-toogle" data-toggle="buttons">
                                         <label class="btn btn-primary" for='option_animate' style='margin-bottom: 0px'
-                                               onClick="true_unfreeze();">
-                                            <input type="radio" name="options" id="option_animate" autocomplete="off"
-                                                   style='display: none;'>
+                                               onClick="true_unfreeze();" >
+                                            <input type="radio" name="options" id="option_animate" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-play"></i> Animate Graph
                                         </label>
                                         <label class="btn btn-primary" for='option_freeze' style='margin-bottom: 0px'
-                                               onClick="force.stop();">
-                                            <input type="radio" name="options" id="option_freeze" autocomplete="off"
-                                                   style='display: none;'>
+                                               onClick="force.stop();" >
+                                            <input type="radio" name="options" id="option_freeze" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-pause"></i> Freeze Graph
                                         </label>
 
                                         <label class="btn btn-primary" for='option_unfix' style='margin-bottom: 0px'
-                                               onClick="free_nodes();">
-                                            <input type="radio" name="options" id="option_unfix" autocomplete="off"
-                                                   style='display: none;'>
+                                               onClick="free_nodes();" >
+                                            <input type="radio" name="options" id="option_unfix" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-lock-open"></i> Unfix All Nodes
                                         </label>
 
                                         <label class="btn btn-primary" for='option_center' style='margin-bottom: 0px'
                                                onClick="console.log('trying center'); gravityMode = 'centered'; force_settle('3000','gravity center');"
                                         >
-                                            <input type="radio" name="options" id="option_center" autocomplete="off"
-                                                   style='display: none;'>
+                                            <input type="radio" name="options" id="option_center" autocomplete="off"  style='display: none;'>
                                             <i class="fas fa-align-center"></i> Center Gravity
                                         </label>
                                         <label class="btn btn-primary" for='option_right' style='margin-bottom: 0px'
                                                onClick="console.log('trying right'); gravityMode = 'right'; force_settle('3000','gravity right');"
                                         >
-                                            <input type="radio" name="options" id="option_right" autocomplete="off"
-                                                   style='display: none;'>
+                                            <input type="radio" name="options" id="option_right" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-align-right"></i> Right Gravity
                                         </label>
                                         <label class="btn btn-primary" for='option_left' style='margin-bottom: 0px'
                                                onClick="console.log('trying left'); gravityMode = 'left'; force_settle('3000','gravity left');"
                                         >
-                                            <input type="radio" name="options" id="option_left" autocomplete="off"
-                                                   style='display: none;'>
+                                            <input type="radio" name="options" id="option_left" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-align-left"></i> Left Gravity
                                         </label>
                                         <label class="btn btn-primary" for='option_group' style='margin-bottom: 0px'
                                                onClick="console.log('trying group'); gravityMode = 'group'; force_settle('3000','gravity group');"
                                         >
-                                            <input type="radio" name="options" id="option_group" autocomplete="off"
-                                                   style='display: none;'>
+                                            <input type="radio" name="options" id="option_group" autocomplete="off" style='display: none;'>
                                             <i class="fas fa-expand-arrows-alt"></i> Group Gravity
                                         </label>
                                         <!-- Animation Options Form -->
@@ -234,8 +192,7 @@
                         </div>
 
                         <hr>
-                        <a class='btn btn-primary btn-block' id='down_svg_link' onclick='downloadSVG();'>Download
-                            Image</a>
+                        <a class='btn btn-primary btn-block' id='down_svg_link' onclick='downloadSVG();'>Download Image</a>
                         <!-- TODO consider reimplementing ? -->
                         <!--
 <hr>
@@ -289,8 +246,7 @@
                     <form onsubmit="event.preventDefault(); return false;">
                         <div class="float-left form-group row">
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" id="nodeTextMatch" name='nodeTextMatch'
-                                       placeholder="search the graph">
+                                <input type="text" class="form-control" id="nodeTextMatch" name='nodeTextMatch'  placeholder="search the graph">
                             </div>
                             <button class='btn btn-primary btn-xs' onclick="searchNodeText();">search</button>
                             &nbsp;
@@ -319,10 +275,10 @@
                                     <i class='fa fa-bug fa-3x'></i>
                                     Data loading error
                                 </h1>
-                                <h3> There was a problem loading your data, please report this bug to
-                                    <a href='mailto:support@owlookit.com?subject=Data+load+error&body=Trouble%20loading%20data%20at%20cube.owlookit.com%20%2FFORCE%2Fdandelion_simple%2F1114904687'
+                                <h3> 	There was a problem loading your data, please report this bug to
+                                    <a href='mailto:support@careset.com?subject=Data+load+error&body=Trouble%20loading%20data%20at%20cube.careset.com%20%2FFORCE%2Fdandelion_simple%2F1114904687'
                                     >
-                                        support@owlookit.com</a></h3>
+                                        support@careset.com</a></h3>
                             </div>
                             <div class="col-md-2"></div>
                         </div>
@@ -334,7 +290,7 @@
                     <script>
 
                         // Data view modal and sockets control
-                        $(".view-data-options").click(function () {
+                        $(".view-data-options").click(function(){
                             $('#current_data_view').modal('toggle');
                         });
 
@@ -356,7 +312,7 @@
                             // The active wrnch names are used for download optons to display the data options that are in-use
                             activeWrenchNames = [];
 
-                            jQuery.each(form_data, function (i, field) {
+                            jQuery.each( form_data, function( i, field ) {
 
                                 // name attribute of input contains wrench id
                                 let name = field.name;
@@ -365,17 +321,17 @@
                                 let socketId = field.value;
 
                                 // Wrench ID is in brackets, need to parse out
-                                let wrenchId = name.slice(name.indexOf('[') + 1, name.indexOf(']'));
+                                let wrenchId = name.slice(name.indexOf('[') +1,name.indexOf(']'));
 
                                 // Store the wrenches/sockets in the same format as they would be submitted by form
-                                sockets[wrenchId] = socketId;
+                                sockets[wrenchId]= socketId;
 
                                 // Build the id, which contains both wrench id and socket id
-                                let id = "wrench-" + wrenchId + "-socket-" + socketId;
+                                let id = "wrench-"+wrenchId+"-socket-"+socketId;
 
                                 // Now store the labels if we need to display active data options
-                                let wrenchLabel = $('#' + id).attr('data-wrench-label');
-                                let socketLabel = $('#' + id).attr('data-socket-label');
+                                let wrenchLabel = $('#'+id).attr('data-wrench-label');
+                                let socketLabel = $('#'+id).attr('data-socket-label');
                                 activeWrenchNames.push({
                                     wrenchLabel: wrenchLabel,
                                     socketLabel: socketLabel
@@ -383,7 +339,7 @@
                             });
                         }
 
-                        $("#save-sockets").click(function (e) {
+                        $("#save-sockets").click( function(e) {
                             // Get the sockets from the Data Options form
                             refresh_sockets();
                             $('#current_data_view').modal('toggle');
@@ -391,16 +347,17 @@
                         });
 
 
+
                         //we need the debug link to continue to work, even though we are not POSTing json to the url in question...
                         //so we are going to override the debug links onclick and make it put the data in a new window...
 
-                        $("#debug_link").on('click', function () {
+                        $("#debug_link").on('click', function(){
                             $.post(json_url, config_data, function (data) {
                                 var w = window.open('about:blank', 'windowname');
                                 w.document.write(JSON.stringify(data));
                                 w.document.close();
                             });
-                            return (false);
+                            return(false);
                         });
 
 
@@ -418,15 +375,15 @@
                         var found_groups = new Map();
                         var found_link_types = new Map();
 
-                        var real_width = 1000,
+                        var 	real_width = 1000,
                             real_height = 1000;
 
-                        var zoom_factor = 1.5;
+                        var 	zoom_factor = 1.5;
 
-                        var virtual_width = real_width * zoom_factor;
-                        var virtual_height = real_height * zoom_factor;
+                        var 	virtual_width = real_width * zoom_factor;
+                        var 	virtual_height = real_height * zoom_factor;
 
-                        var gravityMode = 'centered';
+                        var 	gravityMode = 'centered';
 
                         var json_url = '{{ $graph_uri }}';
 
@@ -441,7 +398,7 @@
                             color('colors');
                         */
                         var config_data = {
-                            "threshold": "10",
+                            "threshold":"10",
                             "sockets": sockets
                         };
 
@@ -477,7 +434,7 @@
                             svg = d3.select("#viz").append("svg")
                                 .attr("width", "100%")
                                 .attr("height", "100%")
-                                .attr('id', 'viz_svg');
+                                .attr('id','viz_svg');
 
 //lets add our stylesheet..
                             svg.append('style').text(svgCSS);
@@ -486,7 +443,7 @@
                             svg.append("rect")
                                 .attr("width", "100%")
                                 .attr("height", "100%")
-                                .attr("stroke", 'grey')
+                                .attr("stroke",'grey')
                                 .attr("fill", "white");
 
                             graph = json_data;	//lets use the global from now on..
@@ -638,7 +595,7 @@
                             y_drop = 20;
                             y_main_label_drop = 10;
 
-                            svg.append('svg:text')    //text for the label
+                            svg.append('svg:text')	//text for the label
                                 .attr('x', legend_x)
                                 .attr('y', legend_y)
                                 .text('Node Types:');	//and we put the name in
@@ -673,10 +630,10 @@
                                             return "translate(" + (legend_x + symbol_more_x) + "," + (legend_y + symbol_more_y) + ")";
                                         })
                                         .attr('fill', 'black')
-                                        .attr("d", d3.svg.symbol()    //here we get a symbol
+                                        .attr("d", d3.svg.symbol()	//here we get a symbol
                                             .size(function () {
                                                 return symbol_size;
-                                            })    //how big is the symbol
+                                            })	//how big is the symbol
                                             .type(function () {
                                                 return d3.svg.symbolTypes[type_index];
                                             }));	//and which symbol should we use?
@@ -685,7 +642,7 @@
                                 }
 
 
-                                svg.append('svg:text')    //text for the label
+                                svg.append('svg:text')	//text for the label
                                     .attr('x', legend_x + text_more_x)
                                     .attr('y', legend_y + text_more_y)
                                     .text(label + ' (' + graph.types[type_index].type_count + ' nodes)');	//and we put the name in
@@ -695,7 +652,7 @@
 
 
                             legend_y += y_main_label_drop;
-                            svg.append('svg:text')    //text for the label
+                            svg.append('svg:text')	//text for the label
                                 .attr('x', legend_x)
                                 .attr('y', legend_y)
                                 .text('Edge Types:');	//and we put the name in
@@ -716,7 +673,7 @@
                                     .attr('stroke-opacity', .7) //key not using defaults
                                     .attr('stroke-linecap', 'round') //key not using defaults
                                     .attr('stroke', function (d) {
-                                        return (edgeColorLookup[link_type_index % dasharrayCount]);
+                                        return (edgeColorLookup[link_type_index % dasharrayCount] );
                                     })
                                     .attr('stroke-dasharray', function (d) {
                                         return (dasharrayLookup[link_type_index % dasharrayCount]);
@@ -734,7 +691,7 @@
 
 
                             legend_y += y_main_label_drop;
-                            svg.append('svg:text')    //text for the label
+                            svg.append('svg:text')	//text for the label
                                 .attr('x', legend_x)
                                 .attr('y', legend_y)
                                 .text('Node Groups:');	//and we put the name in
@@ -744,15 +701,15 @@
                             //this loop handles the groups which are coded with colors
                             found_groups.forEach(function (group_index, label) {
 
-                                svg.append('rect')    //draws the rectangle
+                                svg.append('rect')	//draws the rectangle
                                     .attr('x', legend_x)
                                     .attr('y', legend_y)
-                                    .attr('fill', color(group_index))    //fills it with the groups color
+                                    .attr('fill', color(group_index))	//fills it with the groups color
                                     .attr('stroke', 'black') //not using defaults
                                     .attr('height', rect_height)
                                     .attr('width', rect_width);
 
-                                svg.append('svg:text')    //the text for the label
+                                svg.append('svg:text')	//the text for the label
                                     .attr('x', legend_x + text_more_x)
                                     .attr('y', legend_y + text_more_y)
                                     .text(label + ' (' + graph.groups[group_index].group_count + ' nodes)');	//and we put the name in
@@ -782,10 +739,10 @@
                                     }
                                 })
                                 .attr('stroke-dasharray', function (d) { //this is where we support link 'types'
-                                    return (dasharrayLookup[d.link_type % dasharrayCount]);
+                                    return (dasharrayLookup[d.link_type % dasharrayCount] );
                                 })
                                 .attr('stroke', function (d) { //and here...
-                                    return (edgeColorLookup[d.link_type % dasharrayCount]);
+                                    return (edgeColorLookup[d.link_type % dasharrayCount] );
                                 });
 
                             /**
@@ -808,7 +765,7 @@
                             node.append("path")
                                 .filter(function (d) {
                                     return (!d.img)
-                                })    //basically run this if it is not an image...
+                                })	//basically run this if it is not an image...
                                 .attr("d", d3.svg.symbol()
                                     .size(function (d) {
                                         return d.size;
@@ -831,7 +788,7 @@
                                     if (d.img) {
                                         return (true)
                                     }
-                                })    //Its an IMAGE!!
+                                })	//Its an IMAGE!!
                                 .attr("xlink:href", function (d) {
                                     is_full_link = false;
                                     //for (var file_type of image_strings) { //soon...
@@ -867,7 +824,7 @@
 
 // This is what shows the names on the nodes..
                             node.append('text')
-                                .classed('noselect', true)    //this css is in css/noselect.css and hopefully will prevent the "selection" tool from interfering with the node grabbing process
+                                .classed('noselect', true)	//this css is in css/noselect.css and hopefully will prevent the "selection" tool from interfering with the node grabbing process
                                 .classed('default_nodetext', true) //this class is what handles the text rotations
                                 .attr('dx', 12)
                                 .attr('dy', '.35em')
@@ -889,61 +846,51 @@
 
                             node.on('mousedown', function (d) {
 
-                                //it is not a requirement to have a actual url..
-                                //if you put the blank string... we just do nothing..
-                                if (d.json_url.length == 0) {
-                                    console.log('no json_url found, not attempting to build node card');
-                                    return;
-                                }
-
                                 this_url = d.json_url;
+                                console.log(this_url);
 
                                 $('#node_left_panel').fadeOut("fast");
                                 //populate REST-born data for the custom node panel
-                                $.getJSON(this_url, function (data) {
+                                if (d.json_url.length != 0) {
+                                    $.getJSON(this_url, function (data) {
 
-                                    /*
-                                        //the old way
-                                                            dust.render(this_dust, data, function(err, out){
-                                                  $('#node_left_panel').html(out);
-                                                  $('#node_left_panel').fadeIn("slow");
-                                                                     });
-                                    */
-
-
-                                    if (isset(data.card_img_top)) {
-                                        card_img = `<img class='card-img-top' src="${data.card_img_top}">`;
-                                    } else {
-                                        card_img = '';
-                                    }
+                                        // if there is a img in the data.. use it..
+                                        if(isset(data.card_img_top)){
+                                            card_img = `<img class='card-img-top' src="${data.card_img_top}">`;
+                                        }else{
+                                            card_img = '';
+                                        }
 
 
-                                    //the new way just uses literal templates https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
-                                    card_html = `
+                                        //the new way just uses literal templates https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
+                                        card_html = `
 <div class='card' style='width: 97%; padding .25rem;'>
 	${card_img}
 	${data.card_body}
 </div>
 `;
 
-                                    $('#node_left_panel').html(card_html);
-                                    $('#node_left_panel').fadeIn("slow");
+                                    });
+
+                                }else{
+                                    console.log('no json_url found, not attempting to build node card');
+                                    //if we are here then there was no json url in the node data..
+                                    //we just should display the node name and id.
+
+                                    card_html = `
+<div class='card' style='width: 97%; padding .25rem;'>
+	<h6>Node Id:</h6> <p>${d.id}</p>
+	<h6>Node Name:</h6> <p>${d.name}</p>
+</div>
+`;
 
 
-                                    // TODO reimplement?
-                                    /*
-                                            //this js exists because is_admin = true...
+                                }
 
-                                            this_admin_dust = 'admin.' + this_dust;
-                                                                dust.render(this_admin_dust, data, function(err, out){
-                                                      $('#node_admin_left_panel').html(out);
-                                                      $('#node_admin_left_panel').fadeIn("slow");
-                                                                         });
-
-                                    */
+                                $('#node_left_panel').html(card_html);
+                                $('#node_left_panel').fadeIn("slow");
 
 
-                                });
                                 //populate the generic node panel from the existing node data
                                 //first we need printable versions of the type and group
 
@@ -1099,6 +1046,10 @@
 
                             $('#loading_div').toggle();
                             $('#viz').toggle();
+                            dynamic_resize();
+                            //for reasons, we need to a resize the window to get the chart to resize.. so lets do that now
+                            //with this self-calling function
+                            //TODO this does not belong here!! Where does it go??
 
                         }, 'json').fail(function () {
                             //this means the json did not load...
@@ -1107,6 +1058,7 @@
                             $('#viz').toggle();
 
                         }); //this closes out the entire json getting function...
+
 
 
                     </script>
@@ -1129,7 +1081,7 @@
                         var dasharrayCount = dasharrayLookup.length - 1;
 
                         var edgeColorLookup = 	//taken from http://colorbrewer2.org/?type=qualitative&scheme=Dark2&n=6
-                            ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02']
+                            ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02']
 
                         var edgeColorCount = edgeColorLookup.length - 1;
 
@@ -1137,6 +1089,7 @@
                         function isConnected(a, b) {
                             return linkedByIndex[a.index + "," + b.index] || linkedByIndex[b.index + "," + a.index] || a.index == b.index;
                         }
+
 
 
                         function ContainsFromGo(s, substr) {
@@ -1149,46 +1102,46 @@
                             needle = substr.toLowerCase();
                             return (haystack + '').indexOf(needle) !== -1
                         }
-
-                        function restoreSearch() {
+                        function restoreSearch()
+                        {
                             $("#nodeTextMatch").val('');
                             is_currently_search = false;
                             restoreOpacity();
                         }
-
-                        function restoreOpacity() {
+                        function restoreOpacity(){
 
                             //console.log('running restore opacity');
-                            link.attr('stroke', function (d) {
-                                return (edgeColorLookup[d.link_type % dasharrayCount]);
+                            link.attr('stroke', function(d){
+                                return(edgeColorLookup[d.link_type % dasharrayCount] );
                             })
                             link.attr('class', 'default_link');
 
 
                             d3.selectAll('text.noselect')
-                                .attr('class', 'noselect default_nodetext');
+                                .attr('class','noselect default_nodetext');
                             //all of the text is too big
 
-                            node.attr('class', 'default_node');
+                            node.attr('class','default_node');
 
-                            return (false);
+                            return(false);
                         }
 
 
-                        function searchNodeText() {
+                        function searchNodeText(){
 
                             var searchstring_el = $('#nodeTextMatch');
                             var searchstring = searchstring_el.val();
 
-                            if (strlenFromPHP(searchstring) > 2) {
+                            if(strlenFromPHP(searchstring) > 2){
 
-                                node.attr('class', function (d) {
+                                node.attr('class',function(d)
+                                {
                                     this_text = d3.select(this.childNodes[2]).text();
-                                    this_search_result = ContainsFromGo(this_text, searchstring);
+                                    this_search_result = ContainsFromGo(this_text,searchstring);
 
-                                    if (this_search_result) {
+                                    if(this_search_result){
                                         return 'noselect emphasis_node';
-                                    } else {
+                                    }else{
                                         return 'noselect light_node';
                                     }
 
@@ -1199,27 +1152,27 @@
                                 });
 
 
-                                link.attr('class', function (l) {
-                                    if (ContainsFromGo(l.source.name, searchstring) || ContainsFromGo(l.target.name, searchstring)) {
-                                        d3.selectAll("g").filter(function (d) {
-                                            return d.id === l.source.id || d.id === l.target.id
-                                        })
-                                            .attr('class', 'noselect emphasis_node');
+                                link.attr('class', function(l) {
+                                    if(ContainsFromGo(l.source.name,searchstring) || ContainsFromGo(l.target.name,searchstring) )
+                                    {
+                                        d3.selectAll("g").filter(function(d) { return d.id === l.source.id || d.id === l.target.id })
+                                            .attr('class','noselect emphasis_node');
                                         return 'emphasis_link';
-                                    } else {
-                                        return 'light_link';
-
+                                    }
+                                    else
+                                    {
+                                        return 'light_link';;
                                     }
 
                                 });
 
                                 d3.selectAll('text.noselect')
-                                    .attr('class', function () {
+                                    .attr('class', function(){
                                             this_text = d3.select(this).text();
-                                            this_search_result = ContainsFromGo(this_text, searchstring);
-                                            if (this_search_result) {
+                                            this_search_result = ContainsFromGo(this_text,searchstring);
+                                            if(this_search_result){
                                                 return 'noselect emphasis_nodetext';
-                                            } else {
+                                            }else{
                                                 return 'noselect light_nodetext';
                                             }
                                         }
@@ -1227,20 +1180,20 @@
 
                                 is_currently_search = true;
                             }
-                            return (false);
+                            return(false);
                         }
 
-                        function free_nodes() {
-                            graph.nodes.forEach(function (o, i) {
-                                static_positions[i] = {saved: false};
+                        function free_nodes(){
+                            graph.nodes.forEach(function (o,i) {
+                                static_positions[i] = { saved: false};
                                 o.fixed = false;
                             });
                             true_unfreeze();
                         }
 
-                        function free_one_node(node_index) {
+                        function free_one_node(node_index){
 
-                            static_positions[node_index] = {saved: false};
+                            static_positions[node_index] = { saved: false};
                             graph.nodes[node_index].fixed = false;
 
                             true_unfreeze();
@@ -1249,7 +1202,7 @@
                         //this function handles the proccess of fixing an node in space.
                         //given that we want to be able to save this fixed locations
                         //and that we want them to survive resizing... this is not a trivial process.
-                        function node_fix(this_node, d) {
+                        function node_fix(this_node,d){
                             this_node.classed("fixed", d.fixed = true); //this sets the data to be fixed and sets the css class to have 'fixed' all in one step.
 
                             //this will add ry and rx to the data..
@@ -1266,12 +1219,12 @@
                             post_static_positions(static_positions);
                         }
 
-                        function post_static_positions(static_position_array) {
+                        function post_static_positions(static_position_array){
 
                             clean_array = [];
 
                             for (var i = 0; i < static_position_array.length; i++) {
-                                if (static_position_array[i].saved) {
+                                if(static_position_array[i].saved){
                                     tmp = {};
                                     tmp.rx = static_position_array[i].rx;
                                     tmp.ry = static_position_array[i].ry;
@@ -1283,8 +1236,8 @@
                             }
                             send_me = {
                                 'static_positions': clean_array,
-                                'owlookit_code': '1114904687',
-                                'report': 'dandelion_simple'
+                                'careset_code':  '1114904687' ,
+                                'report':  'dandelion_simple'
                             };
 
                             //console.log('Attempting Save Position with: ');
@@ -1306,9 +1259,9 @@
                         }
 
 
-                        function defineGravity(alpha) {
+                        function defineGravity(alpha){
 
-                            return function (d) {
+                            return function(d) {
 
                                 halfX = virtual_width / 2;
                                 halfY = virtual_height / 2;
@@ -1319,11 +1272,12 @@
                                 tenthX = virtual_width / 10;
                                 tenthY = virtual_height / 10;
 
-                                switch (gravityMode) {
+                                switch(gravityMode){
+
 
 
                                     case 'centered':
-                                        if (d.fixed == true) {
+                                        if(d.fixed == true){
                                             return;
                                         }
 
@@ -1335,8 +1289,8 @@
                                         myGravity_x = myGravity;
                                         myGravity_y = myGravity * myGravityXYRatio;
 
-                                        x_factored_gravity = (myGravity_x * 2) * (1 / group_factor);
-                                        y_factored_gravity = (myGravity_y * 2) * (1 / group_factor);
+                                        x_factored_gravity = (myGravity_x * 2) * (1 / group_factor) ;
+                                        y_factored_gravity = (myGravity_y * 2) * (1 / group_factor) ;
 
                                         xk = x_factored_gravity * alpha;
                                         yk = y_factored_gravity * alpha;
@@ -1348,7 +1302,7 @@
                                         break;
 
                                     case 'right':
-                                        if (d.fixed == true) {
+                                        if(d.fixed == true){
                                             return;
                                         }
 
@@ -1365,7 +1319,7 @@
 
                                         break;
                                     case 'left':
-                                        if (d.fixed == true) {
+                                        if(d.fixed == true){
                                             return;
                                         }
 
@@ -1383,7 +1337,7 @@
                                         break;
 
                                     case 'group':
-                                        if (d.fixed == true) {
+                                        if(d.fixed == true){
                                             return;
                                         }
 
@@ -1409,11 +1363,13 @@
                                         break;
 
 
+
+
                                 }
                             }
                         }
 
-                        function save_relative(d) {
+                        function save_relative(d){
                             d.rx = d.x / virtual_width;
                             //console.log('saving relative x: '+d.rx);
                             d.ry = d.y / virtual_height;
@@ -1436,6 +1392,7 @@
                             document.getElementById('gravityInput').value = newGravity;
 
 
+
                             var newLinkDistance = 30;
                             var newLinkStrength = 0.55;
                             var newFriction = 0.7;
@@ -1443,6 +1400,10 @@
                             var newTheta = 0.35
                             var newGravityXYRatio = 3;
                             var newAlpha = 0.5;
+
+
+
+
 
 
                             force
@@ -1464,7 +1425,7 @@
 
                             dynamic_resize();
 
-                            force_settle(20000, 'user adjusted parameters');
+                            force_settle(20000,'user adjusted parameters');
                         }
 
                         var need_to_load_static_positions = false;
@@ -1472,11 +1433,11 @@
 
                         // This function makes the graph fit the webpage...
                         //How did we get this to work. Apparently height set once in the div and then does not want to change at all...
-                        function dynamic_resize() {
+                        function dynamic_resize(){
 
-                            if (typeof graph === "undefined") {
+                            if (typeof graph  === "undefined") {
                                 //console.log('waiting for json data to run save position logic...');
-                            } else {
+                            }else{
                                 //width = window.innerWidth - 500;	//this breaks when the left side menu stacks b/c of responsive...
                                 real_height = window.innerHeight - 150;	//we use the window to get the height because we need to resize the div
                                 real_width = $('#viz').width() - 10; //this lets us respect the responsive design from bootstrap for width..
@@ -1486,21 +1447,21 @@
                                 virtual_width = real_width * zoom_factor;
 
                                 svg
-                                    .attr('viewBox', '0 0 ' + virtual_width + ' ' + virtual_height)
-                                    .attr('preserveAspectRatio', 'xMidYMid meet')
+                                    .attr('viewBox','0 0 ' + virtual_width + ' ' + virtual_height)
+                                    .attr('preserveAspectRatio','xMidYMid meet')
                                     .attr('width', real_width)
                                     .attr('height', real_height);
 
                                 $('#viz').height(viz_height);
                                 force.size([virtual_width, virtual_height]).resume();
 
-                                graph.nodes.forEach(function (o, i) {
-                                    if (o.fixed) {
+                                graph.nodes.forEach(function (o,i){
+                                    if(o.fixed){
                                         //console.log("node "+i);
                                         new_x = Math.floor(o.rx * virtual_width);
                                         //console.log("Calculating " + new_x + " from relative position " + o.rx);
                                         new_y = Math.floor(o.ry * virtual_height);
-                                        if (!isNaN(new_x)) {
+                                        if(!isNaN(new_x)){
                                             //console.log('calculate new x position ' + new_x);
                                         }
                                         //console.log(o);
@@ -1517,11 +1478,10 @@
                                 });
                                 //lets try calling force.tick which should translate our changes to the data... to the g..
                                 need_to_load_static_positions = true;
-                                force_settle(initial_settle_time, 'resize settle');
+                                force_settle(initial_settle_time,'resize settle');
                             }
 
                         }
-
                         // When we resize the window, lets dynamically resize everything...
                         d3.select(window).on('resize', dynamic_resize);
                         //Since we do not know how big the window is to start, lets resize just once to get going...
@@ -1533,19 +1493,19 @@
                         var how_many_ticks = 0;
                         var too_many_ticks = 70;
 
-                        setInterval(function () {
+                        setInterval( function () {
 
-                            if (how_many_ticks > too_many_ticks) {
+                            if(how_many_ticks > too_many_ticks){
                                 force.stop();
                                 how_many_ticks = 0;
                             }
 
                             //console.log('How many Ticks: ' +how_many_ticks);
 
-                        }, 3000);
+                        },3000);
 
                         //Our way of ensuring that the default is not moving...
-                        function force_settle(time_to_run, reason) {
+                        function force_settle( time_to_run , reason ){
                             if (typeof time_to_run === "undefined") {
                                 time_to_run = 3000;
                             }
@@ -1564,28 +1524,26 @@
                         //independent of other "settle" calls, if the user specifically asked for it...
                         //Called via  a button this function stops the graph from moving...
                         //this is not used currently
-                        function true_freeze() {
+                        function true_freeze(){
                             trulyFrozen = true;
                             force.stop();
                         }
 
                         //Called via  a button this function starts the graph if it is stopped...
-                        function true_unfreeze() {
+                        function true_unfreeze(){
                             trulyFrozen = false;
                             userForcedPlay = true;
-                            force_settle(20000, 'user clicked via true_unfreeze');
-                            setTimeout(function () {
-                                userForcedPlay = false
-                            }, 20000);
+                            force_settle(20000,'user clicked via true_unfreeze');
+                            setTimeout(function () { userForcedPlay = false},20000);
                         }
 
-                        function downloadSVG() {
+                        function downloadSVG(){
                             saveSvgAsPng(document.getElementById('viz_svg'), "diagram.png");
                         }
 
-                        function tooManyTooShow(graph) {
+                        function tooManyTooShow(graph){
                             //replace me with dust...
-                            $("#loading_div").html("<h1> Too much data to browse with the graph browser </h1><ul><li> Node Count: " +
+                            $("#loading_div").html(	"<h1> Too much data to browse with the graph browser </h1><ul><li> Node Count: " +
                                 graph.summary.nodes_count + " > " + second_node_ceiling + "  </li> <li> Connection Count " +
                                 graph.summary.links_count + " > " + second_links_ceiling + " </li> </ul>" +
                                 "<p> You might try to increase the patient flow threshold to get a simpler graph... </p>"
@@ -1663,7 +1621,14 @@
                         }
 
 
+
                     </script>
+
+
+
+
+
+
 
 
                 </div>
@@ -1675,19 +1640,21 @@
     <div class='visible-print-block'>
         <p class='text-center'>
             <small>
-                Copyright © Owlookit {{ date('Y') }}
+                Copyright © CareSet {{ date('Y') }}
             </small>
         <p>
     </div>
 
 
+
     <script>
-        $(document).ready(function () {
+        $(document).ready(function()
+        {
             $('#dataOptionsModal').on('show.bs.modal', function (e) {
 
-                url = '/QUICKREPREPORTJSON/referral_start/1114904687/';
+                url = '/CARESETREPORTJSON/referral_start/1114904687/';
 
-                $.getJSON(url, function (data) {
+                $.getJSON(url,function(data){
 
                     data.FORCE_view_stub = 'dandelion_simple';
                     data.return_url = '/FORCE/dandelion_simple/1114904687/10/';
@@ -1696,16 +1663,16 @@
 
 
                     dust.render("FORCE_data_options_tax", data,
-                        function (err, out) {
+                        function(err,out){
                             $('#modal_tax_chooser').html(out);
 
                             $('#sorted_tax_table').tablesorter({
-                                widgets: ["uitheme", "filter", "zebra", "stickyHeaders"],
+                                widgets : ["uitheme","filter","zebra","stickyHeaders"],
                                 theme: 'bootstrap',
                                 widthFixed: true,
-                                widgetOptions: {
+                                widgetOptions : {
                                     zebra: ['even', 'odd'],
-                                    filter_hideFilters: false,
+                                    filter_hideFilters : false,
                                     stickyHeaders_offset: 51
                                 }
                             });//end of tablesorter..
@@ -1714,20 +1681,21 @@
                     //graph should be defined as a global variable and populated with
                     //the json data from force json call..
                     dust.render("FORCE_data_options_datasource", graph,
-                        function (err, out) {
+                        function(err,out){
                             $('#modal_data_chooser').html(out);
 
                             $('#sorted_tax_table').tablesorter({
-                                widgets: ["uitheme", "filter", "zebra", "stickyHeaders"],
+                                widgets : ["uitheme","filter","zebra","stickyHeaders"],
                                 theme: 'bootstrap',
                                 widthFixed: true,
-                                widgetOptions: {
+                                widgetOptions : {
                                     zebra: ['even', 'odd'],
-                                    filter_hideFilters: false,
+                                    filter_hideFilters : false,
                                     stickyHeaders_offset: 51
                                 }
                             });//end of tablesorter..
                         });//end of dust render
+
 
 
                 });//end of getJSON
@@ -1735,7 +1703,7 @@
         });//end of jquery ready
 
 
-        function isset() {
+        function isset () {
             //  discuss at: http://locutus.io/php/isset/
             // original by: Kevin van Zonneveld (http://kvz.io)
             // improved by: FremyCompany
@@ -1767,7 +1735,6 @@
         }
 
     </script>
-
 
 
 
