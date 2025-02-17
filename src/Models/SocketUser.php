@@ -11,5 +11,5 @@ namespace Owlookit\Quickrep\Models;
 
 class SocketUser extends AbstractQuickrepModel
 {
-    protected $table = 'socket_user';
+    protected $table = 'quickrep_socket_user';
 }

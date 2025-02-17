@@ -121,8 +121,8 @@ abstract class QuickrepReport implements QuickrepReportInterface
      */
     private $_howLongToCacheInSeconds = null;
     private $_socketService = null;
-private $_activeWrenches = [];
-private $_activeSockets = [];
+    private $_activeWrenches = [];
+    private $_activeSockets = [];
 
     /**
      * __construct
@@ -745,7 +745,7 @@ JS;
      */
     public function quote($quote_me): ?string
     {
-        return DB::connection()->getPdo()->quote($quote_me);
+        return DB::connection(config('quickrep.QUICKREP_DB_CACHE_CONNECTION'))->getPdo()->quote($quote_me);
     }
 
     /**
@@ -817,5 +817,3 @@ JS;
     }
 
 }
-
-?>

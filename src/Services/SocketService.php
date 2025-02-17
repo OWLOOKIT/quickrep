@@ -93,14 +93,14 @@ class SocketService
     }
 
     /*
-     Get all of the sockets for a given wrenchString aand
+     Get all the sockets for a given wrenchString and
      return then as an associative array...
     */
 
     /**
      * @param $input
      *
-     * Input comes in the form of an array withe the wrench ID as the index, and socket ID as value
+     * Input comes in the form of an array with the wrench ID as the index, and socket ID as value
      *
      */
     public function setSocketsFromApiInput($input)

@@ -153,6 +153,10 @@ return [
      */
     'TREECARD_URI_PREFIX' => env("TREECARD_URI_PREFIX", "QuickrepTreeCard"),
 
+    'QUICKREP_DB_CONNECTION' => env("QUICKREP_DB_CONNECTION", "reports"),
+
+    'QUICKREP_DB_CACHE_CONNECTION' => env("QUICKREP_DB_CACHE_CONNECTION", "reports_cache"),
+
     /**
      * Database path where all the cache table will be stored.
      * This is set at installation and is not recommended to change.

@@ -10,7 +10,7 @@ namespace Owlookit\Quickrep\Models;
 
 class Socket extends AbstractQuickrepModel
 {
-    protected $table = 'socket';
+    protected $table = 'quickrep_socket';
 
     protected $fillable = ['wrench_id', 'socket_value', 'socket_label', 'is_default_socket', 'socketsource_id'];
 

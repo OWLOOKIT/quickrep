@@ -23,32 +23,22 @@ class QuickrepDatabase
 {
     public static function configure($database)
     {
-        //
-        $default = config('database.statistics');
-        Config::set('database.connections.' . $database, [
-            'driver' => config("database.connections.$default.driver"),
-            'host' => config("database.connections.$default.host"),
-            'port' => config("database.connections.$default.port"),
-            'database' => config("database.connections.$default.database"),
-            'username' => config("database.connections.$default.username"),
-            'password' => config("database.connections.$default.password"),
-        ]);
-
-        // @TODO: make a MySQL fallback
-        // Set the max concat length for cache DB to be A LOT
-        // This will also throw an exception if the DB doesn't exist
-
-        // this way is no longer compatible with laravel 10
-        // DB::connection($database)->statement(DB::raw($session_set_sql));
-        // lets get the raw PDO instead.
-        // $session_set_sql = "SET SESSION group_concat_max_len = 1000000;"; // MySQL only, in PostgreSQL it is limited by the max length of a text value (1Gb)
-        // $pdo = DB::connection()->getPdo();
-        // $pdo->exec($session_set_sql);
+//        $default = config('quickrep.QUICKREP_DB_CACHE_CONNECTION');
+//        Config::set('database.connections.' . $database, [
+//            'driver' => config("database.connections.$default.driver"),
+//            'host' => config("database.connections.$default.host"),
+//            'port' => config("database.connections.$default.port"),
+//            'database' => config("database.connections.$default.database"),
+//            'username' => config("database.connections.$default.username"),
+//            'password' => config("database.connections.$default.password"),
+//        ]);
     }
 
     public static function hasTable($table_name, $connectionName)
     {
-        return Schema::connection($connectionName)->hasTable($table_name);
+        $result = DB::connection($connectionName)->select("SHOW TABLES LIKE '{$table_name}'");
+        return !empty($result);
+//        return Schema::connection($connectionName)->hasTable($table_name);
     }
 
     public static function connection($connectionName)
@@ -70,142 +60,87 @@ class QuickrepDatabase
     /**
      * @param $database
      * @return bool|null
-     * @throws Exception
+     * @throws \Exception
      *
      * Returns true if DB exists, and false if it does not, NULL if the state of existence cannot be determined.
      */
-    public static function doesDatabaseExist($database)
+    public static function doesDatabaseExist( $database )
     {
-        // @TODO: MySQL fallback
-//        $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME =  ?";
-        $query = "SELECT datname FROM pg_database WHERE datname = ?";
+        return true;
+
+        $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME =  ?";
 
         // In case the database in the database.php or .env file doesn't exist, we can safely
         // set this to null so the select call will work, otherwise, we get a mysterious error
-//	$previous_mysql_database = config('database.connections.appstats.database');
+//        $previous_mysql_database = config('database.connections.mysql.database');
 //        config(["database.connections.mysql.database" => null]);
 
         try {
-            $db = DB::connection(config('database.statistics'))->select($query, [$database]);
-        } catch (Exception $e) {
+            $db = DB::select( $query, [ $database ] );
+        } catch ( \Exception $e ) {
+
             if ($e->getCode() == 1049) {
                 // If the database in our configuration file doesn't exist, we have a problem,
                 // So let's blow up.
-                throw new Exception(
-                    $e->getMessage() . "\n\nPlease make sure the database in your .env file exists.",
-                    (int)$e->getCode()
-                );
-            } else {
-                if ($e->getCode() == 1045) {
-                    // If the user doens't have authorization, we have a problem.
-                    $default = config('database.default'); // Get default connection
-                    $username = config("database.connections.$default.username"); // Get username for default connection
-                    $message = "\n\nPlease check your user credentials and permissions and try again. Here are some suggestions:";
-                    $message .= "\n* `$username` may not exist.";
-                    $message .= "\n* `$username` may have the incorrect password in your .env file.";
-                    throw new Exception($e->getMessage() . $message, (int)$e->getCode());
-                } else {
-                    if ($e->getCode() == 1044) {
-                        // Access Denied
-                        $default = config('database.default'); // Get default connection
-                        $default_db = config("database.connections.$default.database");
-                        $username = config(
-                            "database.connections.$default.username"
-                        ); // Get username for default connection
-                        $message = "\n\nPlease make sure that your mysql user in your .env file has permissions on `$default_db`.";
-                        $message .= "\n* Run this mysql command to list users who have access:\n";
-                        $message .= "\tSELECT user from mysql.db where db='$default_db';"; // SHOW GRANTS FOR ken@localhost;;
-                        $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
-                        $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$default_db`.* TO '$username'@'localhost';\n";
-                        throw new Exception($e->getMessage() . $message, (int)$e->getCode());
-                    }
-                }
+                throw new \Exception($e->getMessage()."\n\nPlease make sure the database in your .env file exists.", $e->getCode());
+            } else if ($e->getCode() == 1045) {
+                // If the user doens't have authorization, we have a problem.
+                $default = config( 'database.default' ); // Get default connection
+                $username = config( "database.connections.$default.username" ); // Get username for default connection
+                $message = "\n\nPlease check your user credentials and permissions and try again. Here are some suggestions:";
+                $message .= "\n* `$username` may not exist.";
+                $message .= "\n* `$username` may have the incorrect password in your .env file.";
+                throw new \Exception($e->getMessage().$message, $e->getCode());
+            } else if ($e->getCode() == 1044) {
+                // Access Denied
+                $default = config( 'database.default' ); // Get default connection
+                $default_db = config( "database.connections.$default.database" );
+                $username = config( "database.connections.$default.username" ); // Get username for default connection
+                $message = "\n\nPlease make sure that your mysql user in your .env file has permissions on `$default_db`.";
+                $message .= "\n* Run this mysql command to list users who have access:\n";
+                $message .= "\tSELECT user from mysql.db where db='$default_db';"; // SHOW GRANTS FOR ken@localhost;;
+                $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
+                $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$default_db`.* TO '$username'@'localhost';\n";
+                throw new \Exception($e->getMessage().$message, $e->getCode());
             }
 
             $db = null;
         }
 
         //now that this is done, lets restore the previous database
-//       config(["database.connections.appstats.database" => $previous_mysql_database]);
+//       config(["database.connections.mysql.database" => $previous_mysql_database]);
 
 
         // The DB exists if the schema name in the query matches our database
         $db_exists = false;
-        if (is_array($db) &&
+        if ( is_array($db) &&
             isset($db[0]) &&
-            $db[0]->datname == $database
-//            $db[0]->SCHEMA_NAME == $database // @TODO: test a MySQL fallback
-        ) {
+            $db[0]->SCHEMA_NAME == $database) {
             $db_exists = true;
         } else {
             // Let's make sure that the database REALLY doesn't exist, not that we just don't have permission to see
             try {
-                if (\DB::connection(config('database.statistics'))->getDriverName() == 'pgsql') {
-                    $query = <<<SQL
-DO $$ DECLARE
-    r RECORD;
-BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema() AND tablename NOT IN ('audits', 'pulse_aggregates', 'pulse_entries', 'pulse_values')) LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-END $$;
-SQL;
-                    $db_exists = true;
-                } else {
-                    $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
-                }
-                DB::connection(config('database.statistics'))->statement($query);
-            } catch (Exception $e) {
-                $default = config('database.statistics'); // Get default connection
-                $username = config("database.connections.$default.username"); // Get username for default connection
+                $query = "CREATE DATABASE IF NOT EXISTS `$database`;";
+                DB::statement( $query );
+            } catch ( \Exception $e ) {
+                $default = config( 'database.default' ); // Get default connection
+                $username = config( "database.connections.$default.username" ); // Get username for default connection
                 $message = "\n\nYou may not have permission to the database `$database` to query its existence.";
                 $message .= "\n* `$username` may have insufficient permissions and you may have to run the following command:\n";
                 $message .= "\tGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `$database`.* TO '$username'@'localhost';\n";
-                throw new Exception($e->getMessage() . $message, (int)$e->getCode());
+                throw new \Exception($e->getMessage().$message, $e->getCode());
             }
-        }
-
-        if (\DB::connection(config('database.statistics'))->getDriverName() == 'pgsql') {
-            # @TODO: refactor this to avoid deadlocks
-            # https://stackoverflow.com/questions/40728788/drop-foreign-schema-in-postgresql-using-a-foreign-data-wrapper
-            $query = <<<SQL
-do
-$$
-declare
-  l_rec record;
-begin
-  for l_rec in (select foreign_table_schema, foreign_table_name 
-                from information_schema.foreign_tables) loop
-     execute format('drop foreign table %I.%I', l_rec.foreign_table_schema, l_rec.foreign_table_name);
-  end loop;
-      IMPORT FOREIGN SCHEMA application EXCEPT (
-        migrations,
-        files,
-        file_links,
-        failed_jobs,
-        json_api_client_jobs,
-        media,
-        oauth_access_tokens,
-        oauth_refresh_tokens,
-        temporary_uploads,
-        user_networks)
-    FROM SERVER app_server INTO application;
-end;
-$$
-SQL;
-//            DB::connection(config('database.statistics'))->statement($query);
         }
 
         if ($db_exists) {
             return true;
-        }
-
-        if ($db_exists === false) {
+        } else if ($db_exists === false) {
             return false;
+        } else if ($db == null) {
+            return null;
         }
-
-        return null;
     }
+
 
     /**
      * getTableColumnDefinition
@@ -213,33 +148,40 @@ SQL;
      *
      * @return array
      */
-    public static function getTableColumnDefinition($table_name, $connectionName): array
+    public static function getTableColumnDefinition($table_name, $connectionName, string $sortMethod = 'uksort'): array
     {
-        // @TODO: make a MySQL fallback
-        // $query = "SHOW COLUMNS FROM {$table_name}";
-        $table_name = strtolower($table_name);
-        $query = <<<SQL
-                    SELECT *
-                      FROM information_schema.columns
-                     WHERE table_schema = 'application'
-                       AND table_name   = '{$table_name}';
-SQL;
-        $result = self::connection($connectionName)->select($query);
-        if ($result) {
-            $column_meta = [];
-            foreach ($result as $column) {
-                $column_meta[$column->column_name] = [
-//                    'Name' => $column->Field,
-//                    'Type' => self::basicTypeFromNativeType($column->Type),
-                    'name' => $column->column_name,
-                    'type' => self::basicTypeFromNativeType($column->data_type),
-                ];
-            }
-        } else {
-            throw new Exception("Could not execute `SHOW COLUMNS FROM {$table_name}`");
-        }
+        try {
+            $query = "DESCRIBE {$table_name}";
+            $result = self::connection($connectionName)->select($query);
 
-        return $column_meta;
+            if ($result) {
+                $column_meta = [];
+
+                foreach ($result as $column) {
+                    if ($column->Field === 'id') {
+                        continue; // Пропускаем id
+                    }
+                    // MySQL, Manticore
+                    $column_meta[$column->Field] = [
+                        'name' => $column->Field,
+                        'type' => self::basicTypeFromNativeType($column->Type),
+                    ];
+//                    // PostgreSQL
+//                    $column_meta[$column->column_name] = [
+//                        'name' => $column->column_name,
+//                        'type' => self::basicTypeFromNativeType($column->data_type),
+//                    ];
+                }
+
+                return self::sortColumnMeta($column_meta, $sortMethod);
+
+            } else {
+                throw new \Exception("No columns found for table `{$table_name}` in connection `{$connectionName}`.");
+            }
+        } catch (\Exception $e) {
+            \Log::error("Error getting column definitions for table `{$table_name}`: " . $e->getMessage());
+            throw new \Exception("Could not execute `DESCRIBE {$table_name}`. Error: " . $e->getMessage());
+        }
     }
 
     /**
@@ -252,7 +194,7 @@ SQL;
      */
     public static function basicTypeFromNativeType(string $native)
     {
-        if (strpos($native, "int") !== false) {
+        if (strpos($native, "int") !== false || strpos($native, "bigint") !== false) {
             return "integer";
         }
         if (strpos($native, "double") !== false) {
@@ -272,8 +214,12 @@ SQL;
             }
         }
 
-        if (strpos($native, "varchar") !== false || strpos($native, "text") !== false) {
+        if (strpos($native, "varchar") !== false) {
             return "string";
+        }
+
+        if (strpos($native, "text") !== false) {
+            return "text";
         }
 
         if ($native == "date" || $native == "time" || $native == "datetime") {
@@ -323,7 +269,7 @@ SQL;
      * @param array $haystack
      * @return bool
      */
-    protected static function isWordInArray(array $needles, array $haystack): bool
+    private static function isWordInArray(array $needles, array $haystack): bool
     {
         $full_needle = strtoupper(trim(implode(" ", $needles)));
         foreach ($haystack as $value) {
@@ -334,4 +280,23 @@ SQL;
         }
         return false;
     }
+
+    private static function sortColumnMeta(array $column_meta, string $method): array
+    {
+        if ($method === 'uksort') {
+            uksort($column_meta, 'strnatcmp');
+            return $column_meta;
+        }
+
+        // По умолчанию используем natsort (создание нового массива)
+        $sorted_meta = [];
+        $keys = array_keys($column_meta);
+        natsort($keys);
+        foreach ($keys as $key) {
+            $sorted_meta[$key] = $column_meta[$key];
+        }
+
+        return $sorted_meta;
+    }
+
 }

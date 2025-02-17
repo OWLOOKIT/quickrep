@@ -21,6 +21,31 @@ abstract class AbstractTabularReport extends QuickrepReport
      */
     public $VALID_COLUMN_FORMAT = [
         'TEXT',
+        'STRING',
+        'DETAIL',
+        'URL',
+        'CURRENCY',
+        'NUMBER',
+        'DECIMAL',
+        'DATE',
+        'DATETIME',
+        'TIME',
+        'PERCENT'
+    ];
+
+    public $SORTABLE_COLUMN_FORMAT = [
+        'STRING',
+        'NUMBER',
+        'DECIMAL',
+        'DATE',
+        'DATETIME',
+        'TIME',
+        'PERCENT'
+    ];
+
+    public $FILTERABLE_COLUMN_FORMAT = [
+        'TEXT',
+        'STRING',
         'DETAIL',
         'URL',
         'CURRENCY',

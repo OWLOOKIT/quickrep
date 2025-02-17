@@ -278,7 +278,7 @@ SQL
 //
 //        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
 
-        DB::connection(config('database.statistics'))->unprepared(
+        DB::connection(config('quickrep.QUICKREP_DB_CACHE_CONNECTION'))->unprepared(
             <<<SQL
 DO $$ DECLARE
     r RECORD;

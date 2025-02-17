@@ -34,7 +34,9 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $mapped_header = []; //this is the result from the MapRow function
 
         $Table = clone $this->cache->getTable();
-        $first_row_of_data = $Table->first();
+        $columns = array_diff(array_keys($this->cache->getColumns()), ['id']); // except id
+        $first_row_of_data = $Table->select($columns)->first();
+//        $first_row_of_data = \DB::connection($this->cache->getConnectionName())->table($this->cache->getTableName())->select($columns)->first();
 
         // Get the column names and their types (column definitions) directly from the database
         $fields = $this->cache->getColumns();
@@ -141,64 +143,88 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         }
 
         /*
-        Calculate the distinct count, sum, avg, std, min, max for fields that are integer/date base
-         */
+        Calculate the distinct count, sum, avg, min, max for fields
+        ensuring compatibility with ManticoreSearch
+    */
         $summary_data = [];
         if ($includeSummary) {
             $target_fields = [];
+            $text_fields = [];
+            $numeric_fields = [];
+
             foreach ($fields as $field_name => $field) {
-                if ($field['type'] == 'string') {
-                    $target_fields[] = "count(distinct({$field_name})) as cnt_{$field_name}";
-                } else {
-                    if ($field['type'] == 'integer' || $field['type'] == 'decimal') {
-                        $target_fields[] = "sum({$field_name}) as sum_{$field_name}";
-                        $target_fields[] = "avg({$field_name}) as avg_{$field_name}";
-                        $target_fields[] = "stddev({$field_name}) as std_{$field_name}";
-                        $target_fields[] = "min({$field_name}) as min_{$field_name}";
-                        $target_fields[] = "max({$field_name}) as max_{$field_name}";
-                    } else {
-                        if ($field['type'] == 'date') {
-                            // @TODO: make a Postgres fallback
-//                    $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP({$field_name}))) as avg_{$field_name}";
-//                    $target_fields[] = "extract(epoch from (avg(to_timestamp({$field_name})))) as avg_{$field_name}";
-                            $target_fields[] = "min({$field_name}) as min_{$field_name}";
-                            $target_fields[] = "max({$field_name}) as max_{$field_name}";
-                        }
-                    }
-                }
-            }
-            $target_fields = implode(",", $target_fields);
-            $ResultTable = clone $this->cache->getTable()->reorder();
-            $result = $ResultTable->selectRaw($target_fields)->first();
-
-            /*
-            Parse the result out into an associated array with the proper field name as the key
-             */
-            foreach ($result as $col => $value) {
-                $reg = '/^(cnt|sum|avg|std|min|max)_(.*)$/i';
-                if (preg_match($reg, $col, $matches)) {
-                    $summary_type = $matches[1];
-                    $column_name = $matches[2];
-                    static $type_value = [
-                        "cnt" => "count",
-                        "sum" => "sum",
-                        "avg" => "average",
-                        "std" => "standard_deviation",
-                        "min" => "minimum",
-                        "max" => "maximum",
-                    ];
-                    $summary_data[$column_name][$type_value[$summary_type]] = $value;
+                switch($field['type']) {
+                    case 'string':
+                    case 'text':
+                        $text_fields[] = $field_name;
+//                        $target_fields[] = "count(distinct `{$field_name}`) as `cnt_{$field_name}`";
+                        break;
+                    case 'decimal':
+                    case 'bigint':
+                    case 'integer':
+                        $numeric_fields[] = $field_name;
+                        $target_fields[] = "SUM({$field_name}) AS sum_{$field_name}";
+                        $target_fields[] = "AVG({$field_name}) AS avg_{$field_name}";
+                        $target_fields[] = "MIN({$field_name}) AS min_{$field_name}";
+                        $target_fields[] = "MAX({$field_name}) AS max_{$field_name}";
+                        break;
+                    case 'date':
+                        $target_fields[] = "FROM_UNIXTIME(avg(UNIX_TIMESTAMP(`{$field_name}`))) as `avg_{$field_name}`";
+                        $target_fields[] = "MIN({$field_name}) AS min_{$field_name}";
+                        $target_fields[] = "MAX({$field_name}) AS max_{$field_name}";
+                        break;
                 }
             }
 
+            $target_fields = implode(", ", $target_fields);
+            $ResultTable = clone $this->cache->getTable();
+            // Запрос для числовых данных
+            $result_main = $ResultTable->selectRaw($target_fields)->first();
+//            $result_main = \DB::connection($this->cache->getConnectionName())->table($this->cache->getTableName())->selectRaw($target_fields)->first();
             /*
-            Check if any column are in the SUGGEST_NO_SUMMARY and add a flag
-             */
-            foreach ($summary_data as $name => $data) {
-                if (QuickrepDatabase::isColumnInKeyArray($name, $this->cache->getReport()->SUGGEST_NO_SUMMARY)) {
-                    $summary_data[$name]['NO_SUMMARY'] = true;
-                }
+                Обрабатываем числовые результаты
+            */
+            $summary_data = [];
+            foreach ($numeric_fields as $field_name) {
+                $summary_data[$field_name] = [
+                    "sum" => $result_main->{"sum_{$field_name}"} ?? null,
+                    "average" => $result_main->{"avg_{$field_name}"} ?? null,
+                    "minimum" => $result_main->{"min_{$field_name}"} ?? null,
+                    "maximum" => $result_main->{"max_{$field_name}"} ?? null,
+                ];
             }
+
+//            foreach ($result as $col => $value) {
+//                $reg = '/^(cnt|sum|avg|std|min|max)_(.*)$/i';
+//                if (preg_match($reg, $col, $matches)) {
+//                    $summary_type = $matches[1];
+//                    $column_name = $matches[2];
+//                    static $type_value = [
+//                        "cnt" => "count",
+//                        "sum" => "sum",
+//                        "avg" => "average",
+//                        "std" => "standard_deviation",
+//                        "min" => "minimum",
+//                        "max" => "maximum",
+//                    ];
+//                    $summary_data[$column_name][$type_value[$summary_type]] = $value;
+//                }
+//            }
+
+            /*
+                @TODO: выполняем отдельные запросы для текстовых скалярных полей:
+            */
+//            foreach ($text_fields as $text_field) {
+//                $result_text = $ResultTable->selectRaw("GROUP_CONCAT({$text_field}) AS concat_{$text_field}")->first();
+//                $concatenated_values = $result_text->{"concat_{$text_field}"} ?? '';
+//
+//                // Подсчитываем уникальные значения в PHP
+//                $unique_values_count = $concatenated_values ? count(array_unique(explode(",", $concatenated_values))) : 0;
+//
+//                $summary_data[$text_field] = [
+//                    "count" => $unique_values_count
+//                ];
+//            }
         }
 
         /*
@@ -216,6 +242,8 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
                 'title' => $title,
                 'title_I18n' => $header_I18n[$name] ?? array_fill_keys(config('app.locales'), $title),
                 'format' => $header_format[$name] ?? 'TEXT',
+                'sortable' => in_array($field, $this->cache->getReport()->SORTABLE_COLUMN_FORMAT),
+                'filterable' => in_array($field, $this->cache->getReport()->FILTERABLE_COLUMN_FORMAT),
                 'tags' => $header_tags[$name] ?? [],
             ];
 
@@ -241,48 +269,23 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
     private static function DefaultColumnFormat(QuickrepReport $Report, array $format, array $fields): array
     {
         foreach ($format as $name => $value) {
+
             if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DETAIL)) {
                 $format[$name] = 'DETAIL';
-            } else {
-                if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array(
-                        $fields[$name]["type"],
-                        ["string"]
-                    )) {
-                    $format[$name] = 'URL';
-                } else {
-                    if (QuickrepDatabase::isColumnInKeyArray(
-                        $name,
-                        $Report->CURRENCY
-                    ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                        $format[$name] = 'CURRENCY';
-                    } else {
-                        if (QuickrepDatabase::isColumnInKeyArray(
-                            $name,
-                            $Report->NUMBER
-                        ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                            $format[$name] = 'NUMBER';
-                        } else {
-                            if (QuickrepDatabase::isColumnInKeyArray(
-                                $name,
-                                $Report->DECIMAL
-                            ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                                $format[$name] = 'DECIMAL';
-                            } else {
-                                if (in_array($fields[$name]["type"], ["date", "time", "datetime"])) {
-                                    $format[$name] = strtoupper($fields[$name]["type"]);
-                                } else {
-                                    if (QuickrepDatabase::isColumnInKeyArray(
-                                        $name,
-                                        $Report->PERCENT
-                                    ) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
-                                        $format[$name] = 'PERCENT';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->URL) && in_array($fields[$name]["type"], ["string"])) {
+                $format[$name] = 'URL';
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->CURRENCY) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                $format[$name] = 'CURRENCY';
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->NUMBER) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                $format[$name] = 'NUMBER';
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->DECIMAL) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                $format[$name] = 'DECIMAL';
+            } else if (in_array($fields[$name]["type"], ["date", "time", "datetime"])) {
+                $format[$name] = strtoupper($fields[$name]["type"]);
+            } else if (QuickrepDatabase::isColumnInKeyArray($name, $Report->PERCENT) /* && in_array($fields[$name]["type"],["integer","decimal"])*/) {
+                $format[$name] = 'PERCENT';
             }
+
         }
 
         return $format;
@@ -333,7 +336,6 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $this->orderBy($orderBy);
 
         $paging = $this->paginate($paging_length);
-
         /*
         Transform each row using $Report->MapRow()
          */
@@ -370,6 +372,8 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
     {
         $Pager = clone $this->cache->getTable();
         return $Pager->paginate($length);
+//        $query = \DB::connection($this->cache->getConnectionName())->table($this->cache->getTableName());
+//        return $query->paginate($length);
     }
 
     public function getCollection()
@@ -400,7 +404,8 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         /*
         Transform each row using $Report->MapRow()
          */
-        $collection = $table->get();
+        $collection = $table->limit(self::MAX_PAGING_LIMIT)->get();
+
         $collection->transform(function ($value, $key) use ($Report) {
             $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);

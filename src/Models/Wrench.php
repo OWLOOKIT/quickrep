@@ -10,7 +10,7 @@ namespace Owlookit\Quickrep\Models;
 
 class Wrench extends AbstractQuickrepModel
 {
-    protected $table = 'wrench';
+    protected $table = 'quickrep_wrench';
 
     protected $fillable = ['wrench_lookup_string', 'wrench_label'];
 
