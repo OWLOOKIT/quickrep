@@ -15,7 +15,6 @@ class CreateSocketsAndWrenches extends Migration
     {
         $connection = Schema::connection(config('quickrep.QUICKREP_DB'));
 
-        // Создаём таблицу socket, если её ещё нет
         if (!$connection->hasTable('quickrep_socket')) {
             $connection->create('quickrep_socket', function (Blueprint $table) {
                 $table->increments('id');
@@ -29,7 +28,6 @@ class CreateSocketsAndWrenches extends Migration
             });
         }
 
-        // Создаём таблицу socketsource, если её ещё нет
         if (!$connection->hasTable('quickrep_socketsource')) {
             $connection->create('quickrep_socketsource', function (Blueprint $table) {
                 $table->increments('id');
@@ -39,7 +37,6 @@ class CreateSocketsAndWrenches extends Migration
             });
         }
 
-        // Создаём таблицу socket_user, если её ещё нет
         if (!$connection->hasTable('quickrep_socket_user')) {
             $connection->create('quickrep_socket_user', function (Blueprint $table) {
                 $table->increments('id');
@@ -51,7 +48,6 @@ class CreateSocketsAndWrenches extends Migration
             });
         }
 
-        // Создаём таблицу wrench, если её ещё нет
         if (!$connection->hasTable('quickrep_wrench')) {
             $connection->create('quickrep_wrench', function (Blueprint $table) {
                 $table->increments('id');
