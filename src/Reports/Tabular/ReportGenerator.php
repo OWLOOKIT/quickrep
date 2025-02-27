@@ -2,6 +2,7 @@
 
 namespace Owlookit\Quickrep\Reports\Tabular;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use Owlookit\Quickrep\Exceptions\InvalidHeaderFormatException;
 use Owlookit\Quickrep\Exceptions\InvalidHeaderTagException;
 use Owlookit\Quickrep\Exceptions\UnexpectedHeaderException;
@@ -15,7 +16,7 @@ use Owlookit\Quickrep\Models\QuickrepReport;
 
 class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 {
-    const MAX_PAGING_LIMIT = 99999999999999;
+    const MAX_PAGING_LIMIT = 90000;
 
     protected $cache = null;
 
@@ -36,7 +37,6 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $Table = clone $this->cache->getTable();
         $columns = array_diff(array_keys($this->cache->getColumns()), ['id']); // except id
         $first_row_of_data = $Table->select($columns)->first();
-//        $first_row_of_data = \DB::connection($this->cache->getConnectionName())->table($this->cache->getTableName())->select($columns)->first();
 
         // Get the column names and their types (column definitions) directly from the database
         $fields = $this->cache->getColumns();
@@ -336,44 +336,45 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $this->orderBy($orderBy);
 
         $paging = $this->paginate($paging_length);
-        /*
-        Transform each row using $Report->MapRow()
-         */
-        $collection = $paging->getCollection();
-        $collection->transform(function ($value, $key) use ($Report) {
+
+        $paging->setCollection($paging->getCollection()->map(function ($value, $key) use ($Report) {
             $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);
-            $mapped_and_encoded = [];
-            foreach ($mapped_row as $mapped_key => $mapped_value) {
-                $mapped_and_encoded[$mapped_key] = mb_convert_encoding($mapped_value, 'UTF-8', 'UTF-8');
-            }
-            return $this->arrayToObject($mapped_and_encoded);
-        });
+            return $this->arrayToObject(array_map(fn($v) => mb_convert_encoding($v, 'UTF-8', 'UTF-8'), $mapped_row));
+        }));
 
-        /*
-        Add in the report name/description/columns
-         */
         $reportSummary = new ReportSummaryGenerator($this->cache);
         $custom = collect($reportSummary->toJson($Report));
 
-        $merge = $custom->merge($paging);
+        $paginationData = $paging->toArray();
+        $merged = $custom->merge(array_merge($paginationData, ['data' => $paginationData['data']]));
 
-        /*
-        This sets the per_page size to 0 so it does not show the MAX_PAGING_LIMIT number
-         */
         if ($paging_length == self::MAX_PAGING_LIMIT) {
-            $merge['per_page'] = 0;
+            $merged['per_page'] = 0;
         }
 
-        return $merge;
+        return $merged;
     }
 
-    public function paginate($length)
+    public function paginate($perPage)
     {
+        $page = request('page', 1);
+        $offset = ($page - 1) * $perPage;
+
         $Pager = clone $this->cache->getTable();
-        return $Pager->paginate($length);
-//        $query = \DB::connection($this->cache->getConnectionName())->table($this->cache->getTableName());
-//        return $query->paginate($length);
+        $total = $Pager->count();
+
+        $maxMatches = min(max($total, ($page * $perPage) + $perPage * 10), 1000000);
+
+        $sql = $Pager->toSql() . " LIMIT {$perPage} OFFSET {$offset} OPTION max_matches = {$maxMatches}";
+        $bindings = $Pager->getBindings();
+
+        $items = collect(\DB::connection($this->cache->getConnectionName())->select($sql, $bindings));
+
+        return new LengthAwarePaginator($items, $total, $perPage, $page, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
     }
 
     public function getCollection()

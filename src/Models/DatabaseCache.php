@@ -198,6 +198,8 @@ class DatabaseCache
         $createTableSQL = "CREATE TABLE `{$tableName}` (" . implode(", ", $columns) . ") min_prefix_len = '3' min_infix_len = '3' expand_keywords = '1'";
         $this->cache_pdo->exec($createTableSQL);
 
+        $this->columns = QuickrepDatabase::getTableColumnDefinition($this->getTableName(), $this->connectionName);
+
         $this->bulkInsertData($firstQuery, $tableName);
 
         QuickrepMeta::updateOrCreate(
@@ -220,8 +222,6 @@ class DatabaseCache
             $columns[] = "`{$columnName}` {$columnType}";
         }
 
-        $rowWithData = $stmt->fetch(\PDO::FETCH_ASSOC);
-
         return $columns;
     }
 
@@ -231,7 +231,6 @@ class DatabaseCache
         $columnName = $parts[0];
         $explicitType = $parts[1] ?? null;
 
-        // Приводим тип к верхнему регистру, если он указан
         if ($explicitType !== null) {
             $explicitType = strtoupper($explicitType);
         }
@@ -243,7 +242,7 @@ class DatabaseCache
     {
         // Маппинг типов PostgreSQL на типы Manticoresearch
         return match (strtolower($type)) {
-            'smallint', 'integer', 'int', 'int2', 'int4', 'serial', 'serial2', 'serial4' => 'INT',
+            'smallint', 'integer', 'int', 'int2', 'int4', 'serial', 'serial2', 'serial4' => 'BIGINT',
             'bigint', 'int8', 'serial8' => 'BIGINT',
             'decimal', 'numeric', 'real', 'double precision', 'float4', 'float8' => 'FLOAT',
             'boolean', 'bool' => 'BOOL',
@@ -342,33 +341,50 @@ class DatabaseCache
         $mappedRow = [];
 
         foreach ($columnMappings as $baseName => $sourceName) {
-            // Проверяем, есть ли колонка в оригинальной строке данных
             $value = $row[$sourceName] ?? null;
+            $columnType = $this->columns[$baseName]['type'] ?? 'text';
 
-            // Если колонка содержит дату, конвертируем её в UNIX timestamp
-            if (isset($value) && strtotime($value) !== false) {
-                $value = strtotime($value);
+            switch ($columnType) {
+                case 'bigint':
+                case 'integer':
+                    $value = is_numeric($value) ? (int) $value : 'NULL';
+                    break;
+                case 'float':
+                case 'decimal':
+                    $value = is_numeric($value) ? (float) $value : 'NULL';
+                    break;
+                case 'timestamp':
+                case 'datetime':
+                case 'date':
+                    $timestamp = strtotime($value);
+                    $value = $timestamp !== false ? $timestamp : 'NULL';
+                    break;
+                default:
+                    $value = !is_null($value) ? $this->cache_pdo->quote($value) : 'NULL';
+                    break;
             }
 
-            // Безопасно экранируем значение
-            $mappedRow[$baseName] = is_null($value) ? 'NULL' : $this->cache_pdo->quote($value);
+            $mappedRow[$baseName] = $value;
         }
 
         return '(' . implode(", ", $mappedRow) . ')';
 
-//        $mappedRow = [];
-//        foreach ($columnMappings as $baseName => $sourceName) {
-//            $mappedRow[$baseName] = $this->cache_pdo->quote($row[$sourceName]);
-//        }
-//        return '(' . implode(", ", $mappedRow) . ')';
     }
 
     private function insertBatch($table, $columns, $batchData)
     {
+        if (empty($batchData)) {
+            return;
+        }
         $columnsStr = implode(", ", array_map(fn($col) => "`$col`", $columns));
         $valuesStr = implode(", ", $batchData);
         $sql = "INSERT INTO `$table` ($columnsStr) VALUES $valuesStr;";
-        $this->cache_pdo->exec($sql);
+
+        try {
+            $this->cache_pdo->exec($sql);
+        } catch (\PDOException $e) {
+            throw new \Exception("Ошибка при вставке данных в `$table`: " . $e->getMessage());
+        }
     }
 
     public function getLastGenerated()
