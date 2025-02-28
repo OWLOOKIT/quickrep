@@ -44,7 +44,10 @@ class QuickrepDatabase
     public static function connection($connectionName)
     {
         try {
-            return DB::connection($connectionName);
+            if ($connectionName === 'manticore') {
+                return DB::connection(config('quickrep.QUICKREP_DB_CACHE_CONNECTION'));
+            }
+            return DB::connection(config('quickrep.QUICKREP_DB_CONNECTION'));
         } catch (Exception $e) {
             $message = $e->getMessage(
                 ) . " You may have a permissions error with your database user. Please Refer to the Quickrep troubleshooting guide <a href='https://github.com/Owlookit/Quickrep#troubleshooting'>https://github.com/Owlookit/Quickrep#troubleshooting</a>";
