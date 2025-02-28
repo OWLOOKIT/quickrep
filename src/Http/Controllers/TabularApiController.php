@@ -205,10 +205,14 @@ class TabularApiController extends AbstractApiController
                 $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
             }
 
-            for ($i = 0, $l = count($collection); $i < $l; $i++) { // row $i
+            for ($i = 0, $l = count($collection); $i < $l; $i++) {
                 $j = 0;
-                foreach ($collection[$i] as $k => $v) { // column $j
-                    $sheet->setCellValue([$j + 1, ($i + 1 + 1)], trim(strip_tags($v)));
+                foreach ($collection[$i] as $k => $v) {
+                    if (is_numeric($v) && strlen((string)$v) >= 10) {
+                        $sheet->setCellValueExplicitByColumnAndRow($j + 1, $i + 2, (string)$v, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    } else {
+                        $sheet->setCellValueByColumnAndRow($j + 1, $i + 2, trim(strip_tags($v)));
+                    }
                     $j++;
                 }
             }
