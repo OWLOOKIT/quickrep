@@ -34,7 +34,7 @@ class DatabaseCache
         $cacheDatabaseSource = $report->getCacheDatabaseSource();
 
         if ($cacheDatabaseSource !== null && isset($cacheDatabaseSource['database'], $cacheDatabaseSource['table'])) {
-            $this->connectionName = $cacheDatabaseSource['database'];
+            $this->connectionName = config('quickrep.QUICKREP_DB_CACHE_CONNECTION');
 
             try {
                 QuickrepDatabase::configure($this->connectionName);
