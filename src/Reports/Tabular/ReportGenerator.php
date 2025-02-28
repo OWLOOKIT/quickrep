@@ -381,9 +381,6 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
     {
         $Report = $this->cache->getReport();
 
-        /*
-        If there is a filter, lets apply it to each column
-         */
         $filter = $Report->getInput('filter');
         if ($filter && is_array($filter)) {
             $associated_filter = [];
@@ -397,27 +394,24 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         }
 
         $orderBy = $Report->getInput('order') ?? [];
-
         $this->orderBy($orderBy);
 
+        $maxMatches = max(self::MAX_PAGING_LIMIT * 10, 100000);
         $table = $this->cache->getTable();
 
-        /*
-        Transform each row using $Report->MapRow()
-         */
-        $collection = $table->limit(self::MAX_PAGING_LIMIT)->get();
+        $sql = $table->toSql() . "LIMIT {$maxMatches} OPTION max_matches = {$maxMatches}";
+        $bindings = $table->getBindings();
 
-        $collection->transform(function ($value, $key) use ($Report) {
+        $results = collect(\DB::connection($this->cache->getConnectionName())->select($sql, $bindings));
+
+        $results->transform(function ($value, $key) use ($Report) {
             $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);
-            $mapped_and_encoded = [];
-            foreach ($mapped_row as $mapped_key => $mapped_value) {
-                $mapped_and_encoded[$mapped_key] = mb_convert_encoding($mapped_value, 'UTF-8', 'UTF-8');
-            }
+            $mapped_and_encoded = array_map(fn($v) => mb_convert_encoding($v, 'UTF-8', 'UTF-8'), $mapped_row);
             return $this->arrayToObject($mapped_and_encoded);
         });
 
-        return $collection;
+        return $results;
     }
 
     function objectToArray($d)
