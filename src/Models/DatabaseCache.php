@@ -342,33 +342,70 @@ class DatabaseCache
 
         foreach ($columnMappings as $baseName => $sourceName) {
             $value = $row[$sourceName] ?? null;
-            $columnType = $this->columns[$baseName]['type'] ?? 'text';
+
+            // Manticore column types (from QuickrepDatabase::getTableColumnDefinition)
+            // expected: bigint|float|bool|timestamp|text|json (sometimes: integer|decimal|datetime|date)
+            $columnType = strtolower($this->columns[$baseName]['type'] ?? 'text');
 
             switch ($columnType) {
+                // Numbers: NULL -> 0
                 case 'bigint':
                 case 'integer':
-                    $value = is_numeric($value) ? (int) $value : 'NULL';
+                case 'int':
+                    $mappedRow[$baseName] = is_numeric($value) ? (int) $value : 0;
                     break;
+
                 case 'float':
                 case 'decimal':
-                    $value = is_numeric($value) ? (float) $value : 'NULL';
+                case 'double':
+                    $mappedRow[$baseName] = is_numeric($value) ? (float) $value : 0;
                     break;
+
+                // Bool: NULL -> 0 (false)
+                case 'bool':
+                case 'boolean':
+                    if ($value === null || $value === '') {
+                        $mappedRow[$baseName] = 0;
+                    } else {
+                        // accept true/false, 1/0, 't'/'f', 'true'/'false'
+                        $mappedRow[$baseName] = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+                    }
+                    break;
+
+                // Timestamp: NULL -> 0
                 case 'timestamp':
                 case 'datetime':
                 case 'date':
-                    $timestamp = strtotime($value);
-                    $value = $timestamp !== false ? $timestamp : 'NULL';
+                    if ($value === null || $value === '') {
+                        $mappedRow[$baseName] = 0;
+                    } else {
+                        $ts = strtotime((string) $value);
+                        $mappedRow[$baseName] = ($ts !== false) ? $ts : 0;
+                    }
                     break;
+
+                // JSON: NULL -> {}
+                case 'json':
+                    if ($value === null || $value === '') {
+                        $mappedRow[$baseName] = $this->cache_pdo->quote('{}');
+                    } else {
+                        // if it's already json string - keep; if array/object - encode
+                        if (is_array($value) || is_object($value)) {
+                            $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        }
+                        $mappedRow[$baseName] = $this->cache_pdo->quote((string) $value);
+                    }
+                    break;
+
+                // Text: NULL -> ''
+                case 'text':
                 default:
-                    $value = !is_null($value) ? $this->cache_pdo->quote($value) : 'NULL';
+                    $mappedRow[$baseName] = $this->cache_pdo->quote((string)($value ?? ''));
                     break;
             }
-
-            $mappedRow[$baseName] = $value;
         }
 
-        return '(' . implode(", ", $mappedRow) . ')';
-
+        return '(' . implode(', ', $mappedRow) . ')';
     }
 
     private function insertBatch($table, $columns, $batchData)
