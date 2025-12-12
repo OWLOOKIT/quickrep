@@ -399,7 +399,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $maxMatches = max(self::MAX_PAGING_LIMIT * 10, 100000);
         $table = $this->cache->getTable();
 
-        $sql = $table->toSql() . "LIMIT {$maxMatches} OPTION max_matches = {$maxMatches}";
+        $sql = $table->toSql() . " LIMIT {$maxMatches} OPTION max_matches = {$maxMatches}";
         $bindings = $table->getBindings();
 
         $results = collect(\DB::connection($this->cache->getConnectionName())->select($sql, $bindings));
