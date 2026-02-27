@@ -61,7 +61,15 @@ class QuickrepDatabase
 
     public static function drop($table_name, $connectionName)
     {
-        return Schema::connection($connectionName)->drop($table_name);
+        $conn = DB::connection($connectionName);
+        $driver = $conn->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return Schema::connection($connectionName)->drop($table_name);
+        }
+
+        // mysql / manticore
+        return $conn->statement("DROP TABLE IF EXISTS `{$table_name}`");
     }
 
     /**
