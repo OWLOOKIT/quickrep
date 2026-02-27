@@ -13,7 +13,7 @@ class CreateSocketsAndWrenches extends Migration
      */
     public function up()
     {
-        $connection = Schema::connection(config('quickrep.QUICKREP_DB'));
+        $connection = Schema::connection(config('quickrep.QUICKREP_CONFIG_DB_CONNECTION', 'pgsql'));
 
         if (!$connection->hasTable('quickrep_socket')) {
             $connection->create('quickrep_socket', function (Blueprint $table) {
@@ -68,7 +68,7 @@ class CreateSocketsAndWrenches extends Migration
      */
     public function down()
     {
-        $connection = Schema::connection(config('quickrep.QUICKREP_DB'));
+        $connection = Schema::connection(config('quickrep.QUICKREP_CONFIG_DB_CONNECTION', 'pgsql'));
         $connection->dropIfExists('quickrep_socket');
         $connection->dropIfExists('quickrep_socketsource');
         $connection->dropIfExists('quickrep_socket_user');

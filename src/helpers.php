@@ -26,20 +26,25 @@ function graph_api_prefix()
 
 function quickrep_cache_db()
 {
-    $db = config("quickrep.QUICKREP_CACHE_DB");
-    if (empty($db)) {
-        info("Quickrep Cache DB not set in quickrep.php config file.");
+    // return connection name
+    $conn = config('quickrep.QUICKREP_CACHE_DB_CONNECTION')
+        ?: config('quickrep.QUICKREP_DB_CACHE_CONNECTION')
+            ?: 'manticore';
+
+    if (empty($conn)) {
+        info("Quickrep Cache DB connection not set in quickrep.php config file.");
     }
-    return $db;
+    return $conn;
 }
 
 function quickrep_config_db()
 {
-    $db = config("quickrep.QUICKREP_CONFIG_DB");
-    if (empty($db)) {
-        info("Quickrep Config DB not set in quickrep.php config file.");
+    // return connection name (recommended)
+    $conn = config('quickrep.QUICKREP_CONFIG_DB_CONNECTION') ?: 'pgsql';
+    if (empty($conn)) {
+        info("Quickrep Config DB connection not set in quickrep.php config file.");
     }
-    return $db;
+    return $conn;
 }
 
 function report_path()
@@ -49,5 +54,24 @@ function report_path()
     return app_path($parts[count($parts) - 1]);
 }
 
+function quickrep_source_db()
+{
+    $conn = config('quickrep.QUICKREP_SOURCE_DB_CONNECTION')
+        ?: config('quickrep.QUICKREP_DB_CONNECTION')
+            ?: 'appstats';
+    if (empty($conn)) {
+        info("Quickrep Source DB connection not set in quickrep.php config file.");
+    }
+    return $conn;
+}
 
+// Legacy: database *names* (not connections). Keep for compatibility if something still uses them.
+function quickrep_cache_database_name()
+{
+    return config("quickrep.QUICKREP_CACHE_DB") ?: "_quickrep_cache";
+}
 
+function quickrep_config_database_name()
+{
+    return config("quickrep.QUICKREP_CONFIG_DB") ?: "_quickrep_config";
+}

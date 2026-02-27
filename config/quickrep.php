@@ -153,18 +153,32 @@ return [
      */
     'TREECARD_URI_PREFIX' => env("TREECARD_URI_PREFIX", "QuickrepTreeCard"),
 
+    /**
+     * Backward compatible keys (old semantics):
+     * QUICKREP_DB_CONNECTION      - historically: "source" connection
+     * QUICKREP_DB_CACHE_CONNECTION - historically: "cache" connection
+     */
     'QUICKREP_DB_CONNECTION' => env("QUICKREP_DB_CONNECTION", "reports"),
-
     'QUICKREP_DB_CACHE_CONNECTION' => env("QUICKREP_DB_CACHE_CONNECTION", "reports_cache"),
+
+    /**
+     * New (recommended) semantics:
+     * - SOURCE: where report SQL runs (PostgreSQL appstats)
+     * - CACHE: where cached tables live (Manticore)
+     * - CONFIG: where quickrep_meta / sockets / wrenches live (PostgreSQL appapi)
+     */
+    'QUICKREP_SOURCE_DB_CONNECTION' => env('QUICKREP_SOURCE_DB_CONNECTION', env("QUICKREP_DB_CONNECTION", "appstats")),
+    'QUICKREP_CACHE_DB_CONNECTION'  => env('QUICKREP_CACHE_DB_CONNECTION',  env("QUICKREP_DB_CACHE_CONNECTION", "manticore")),
+    'QUICKREP_CONFIG_DB_CONNECTION' => env('QUICKREP_CONFIG_DB_CONNECTION', 'pgsql'),
 
     /**
      * Database path where all the cache table will be stored.
      * This is set at installation and is not recommended to change.
      */
-    'QUICKREP_CACHE_DB' => env("QUICKREP_CACHE_DB", "_quickrep_cache"),
+    'QUICKREP_CACHE_DB' => env("QUICKREP_CACHE_DB", "_quickrep_cache"), // legacy (name-only, not connection)
 
     /**
      * Database path where configuration data will be stored, for sockets, etc
      */
-    'QUICKREP_CONFIG_DB' => env("QUICKREP_CONFIG_DB", "_quickrep_config"),
+    'QUICKREP_CONFIG_DB' => env("QUICKREP_CONFIG_DB", "_quickrep_config"), // legacy (name-only, not connection)
 ];

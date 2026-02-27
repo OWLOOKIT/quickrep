@@ -19,7 +19,7 @@ abstract class AbstractQuickrepModel extends Model
     {
         parent::__construct($attributes);
 
-        // We use the quickrep config DB for our "in-house" models
-        $this->connection = config('quickrep.QUICKREP_DB_CONNECTION');
+        // We use the quickrep CONFIG DB for our "in-house" models (meta/sockets/wrenches)
+        $this->connection = quickrep_config_db();
     }
 }

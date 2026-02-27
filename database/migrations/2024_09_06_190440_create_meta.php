@@ -13,7 +13,7 @@ class CreateMeta extends Migration
      */
     public function up()
     {
-        $connection = Schema::connection(config('quickrep.QUICKREP_DB'));
+        $connection = Schema::connection(config('quickrep.QUICKREP_CONFIG_DB_CONNECTION', 'pgsql'));
 
         if (!$connection->hasTable('quickrep_meta')) {
             $connection->create('quickrep_meta', function (Blueprint $table) {
@@ -33,6 +33,6 @@ class CreateMeta extends Migration
      */
     public function down()
     {
-        Schema::connection(config('quickrep.QUICKREP_DB'))->dropIfExists('quickrep_meta');
+        Schema::connection(config('quickrep.QUICKREP_CONFIG_DB_CONNECTION', 'pgsql'))->dropIfExists('quickrep_meta');
     }
 }
