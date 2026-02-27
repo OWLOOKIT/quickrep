@@ -110,147 +110,168 @@ class TabularApiController extends AbstractApiController
 
     protected function csvResponse($filename, $reportDescription, $header, $collection)
     {
-        $response = new StreamedResponse(function () use ($header, $collection) {
-            // Open output stream
-            $handle = fopen('php://output', 'w');
+        try {
+            $response = new StreamedResponse(function () use ($header, $collection) {
+                // Open output stream
+                $handle = fopen('php://output', 'w');
 
-            // Add CSV headers
-            fputcsv($handle, $header);
+                // Add CSV headers
+                fputcsv($handle, $header);
 
-            // Get all users
-            foreach ($collection as $value) {
-                // Add a new row with data
-                fputcsv($handle, json_decode(json_encode($value), true));
-            }
+                // Get all users
+                foreach ($collection as $value) {
+                    // Add a new row with data
+                    fputcsv($handle, json_decode(json_encode($value), true));
+                }
 
-            // Close the output stream
-            fclose($handle);
-        }, 200, [
-            'Content-Description' => 'File Transfer',
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . urlencode($filename) . '"',
-            'Expires' => '0',
-            'Cache-Control' => 'must-revalidate',
-            'Pragma' => 'public'
-        ]);
+                // Close the output stream
+                fclose($handle);
+            }, 200, [
+                'Content-Description' => 'File Transfer',
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . urlencode($filename) . '"',
+                'Expires' => '0',
+                'Cache-Control' => 'must-revalidate',
+                'Pragma' => 'public'
+            ]);
 
-        return $response;
+            return $response;
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 
     protected function excelResponse($filename, $reportDescription, $header, $collection)
     {
-        $response = new StreamedResponse(function () use ($filename, $reportDescription, $header, $collection) {
-            $spreadsheet = new Spreadsheet();
+        try {
+            $response = new StreamedResponse(function () use ($filename, $reportDescription, $header, $collection) {
+                $spreadsheet = new Spreadsheet();
 
-            $spreadsheet->getProperties()
-                ->setCreator(config("app.name"))
-                ->setLastModifiedBy(config("app.name"))
-                ->setTitle(preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename))
-                ->setSubject(config("app.name") . " Report document")
-                ->setDescription(
-                    "Report document generated for Office 2007 XLSX."
-                )
-                ->setKeywords(config("app.name") . " report")
-                ->setCategory(config("app.name") . " report");
+                $spreadsheet->getProperties()
+                    ->setCreator(config("app.name"))
+                    ->setLastModifiedBy(config("app.name"))
+                    ->setTitle(preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename))
+                    ->setSubject(config("app.name") . " Report document")
+                    ->setDescription(
+                        "Report document generated for Office 2007 XLSX."
+                    )
+                    ->setKeywords(config("app.name") . " report")
+                    ->setCategory(config("app.name") . " report");
 
-            $sheet = $spreadsheet->getActiveSheet();
+                $sheet = $spreadsheet->getActiveSheet();
 
-            $sheet->getSheetView()->setZoomScale(120);
-            $sheet->getTabColor()->setRGB('b2ebf2');
+                $sheet->getSheetView()->setZoomScale(120);
+                $sheet->getTabColor()->setRGB('b2ebf2');
 
-            $sheet->getPageSetup()->setFitToWidth(1);
-            $sheet->getPageSetup()
-                ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-            $sheet->getPageSetup()
-                ->setPaperSize(PageSetup::PAPERSIZE_A4);
+                $sheet->getPageSetup()->setFitToWidth(1);
+                $sheet->getPageSetup()
+                    ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+                $sheet->getPageSetup()
+                    ->setPaperSize(PageSetup::PAPERSIZE_A4);
 
-            $drawing = new HeaderFooterDrawing();
-            $drawing->setName('logo');
-            $drawing->setPath('./storage/assets/logo.png');
-            $drawing->setHeight(32);
-            $sheet->getHeaderFooter()->addImage(
-                $drawing,
-                HeaderFooter::IMAGE_HEADER_RIGHT
-            );
-
-            $sheet->getHeaderFooter()
-                ->setOddHeader('&C&H&"Verdana,Trebuchet"&14' . $reportDescription . '&R&G');
-            $sheet->getHeaderFooter()
-                ->setOddFooter(
-                    '&L&B' . $spreadsheet->getProperties()->getTitle() . ' | ' . Carbon::now() . '&RСтр. &P из &N'
+                $drawing = new HeaderFooterDrawing();
+                $drawing->setName('logo');
+                $drawing->setPath('./storage/assets/logo.png');
+                $drawing->setHeight(32);
+                $sheet->getHeaderFooter()->addImage(
+                    $drawing,
+                    HeaderFooter::IMAGE_HEADER_RIGHT
                 );
 
-            $sheet->setTitle(
-                (strlen($spreadsheet->getProperties()->getTitle()) > 20) ? substr(
-                        $spreadsheet->getProperties()->getTitle(),
-                        0,
-                        20
-                    ) . '...' : $spreadsheet->getProperties()->getTitle()
-            );
+                $sheet->getHeaderFooter()
+                    ->setOddHeader('&C&H&"Verdana,Trebuchet"&14' . $reportDescription . '&R&G');
+                $sheet->getHeaderFooter()
+                    ->setOddFooter(
+                        '&L&B' . $spreadsheet->getProperties()->getTitle() . ' | ' . Carbon::now() . '&RСтр. &P из &N'
+                    );
 
-            $styleArray = [
-                'font' => [
-                    'bold' => true,
-                ],
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical' => Alignment::VERTICAL_CENTER,
-                ],
-                'borders' => [
-                    'top' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                    ],
-                    'bottom' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                    ],
-                    'left' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                    ],
-                    'right' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                    ],
-                ],
-                'fill' => [
-                    'fillType' => Fill::FILL_GRADIENT_LINEAR,
-                    'rotation' => 90,
-                    'startColor' => [
-                        'argb' => 'b2ebf2ff',
-                    ],
-                    'endColor' => [
-                        'argb' => '008fc1ff',
-                    ],
-                ],
-            ];
-            $sheet->getStyle([1, 1, count($header), 1])->applyFromArray($styleArray);
+                $sheet->setTitle(
+                    (strlen($spreadsheet->getProperties()->getTitle()) > 20) ? substr(
+                            $spreadsheet->getProperties()->getTitle(),
+                            0,
+                            20
+                        ) . '...' : $spreadsheet->getProperties()->getTitle()
+                );
 
-            for ($i = 0, $l = count($header); $i < $l; $i++) {
-                $sheet->setCellValue([$i + 1, 1], $header[$i]);
-                $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
-            }
+                $styleArray = [
+                    'font' => [
+                        'bold' => true,
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'top' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                        'bottom' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                        'left' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                        'right' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_GRADIENT_LINEAR,
+                        'rotation' => 90,
+                        'startColor' => [
+                            'argb' => 'b2ebf2ff',
+                        ],
+                        'endColor' => [
+                            'argb' => '008fc1ff',
+                        ],
+                    ],
+                ];
+                $sheet->getStyle([1, 1, count($header), 1])->applyFromArray($styleArray);
 
-            for ($i = 0, $l = count($collection); $i < $l; $i++) {
-                $j = 0;
-                foreach ($collection[$i] as $k => $v) {
-                    if (is_numeric($v) && strlen((string)$v) >= 10) {
-                        $sheet->setCellValueExplicitByColumnAndRow($j + 1, $i + 2, (string)$v, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                    } else {
-                        $sheet->setCellValueByColumnAndRow($j + 1, $i + 2, trim(strip_tags($v)));
-                    }
-                    $j++;
+                for ($i = 0, $l = count($header); $i < $l; $i++) {
+                    $sheet->setCellValue([$i + 1, 1], $header[$i]);
+                    $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
                 }
-            }
 
-            $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
-        }, 200, [
-            'Content-Description' => 'File Transfer',
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . urlencode($filename) . '"',
-            'Expires' => '0',
-            'Cache-Control' => 'must-revalidate',
-            'Pragma' => 'public'
-        ]);
+                for ($i = 0, $l = count($collection); $i < $l; $i++) {
+                    $j = 0;
+                    foreach ($collection[$i] as $k => $v) {
+                        if (is_numeric($v) && strlen((string)$v) >= 10) {
+                            $sheet->setCellValueExplicitByColumnAndRow(
+                                $j + 1,
+                                $i + 2,
+                                (string)$v,
+                                \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
+                            );
+                        } else {
+                            $sheet->setCellValueByColumnAndRow($j + 1, $i + 2, trim(strip_tags($v)));
+                        }
+                        $j++;
+                    }
+                }
 
-        return $response;
+                $writer = new Xlsx($spreadsheet);
+                $writer->save('php://output');
+            }, 200, [
+                'Content-Description' => 'File Transfer',
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . urlencode($filename) . '"',
+                'Expires' => '0',
+                'Cache-Control' => 'must-revalidate',
+                'Pragma' => 'public'
+            ]);
+
+            return $response;
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 }

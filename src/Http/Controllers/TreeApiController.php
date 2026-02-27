@@ -11,18 +11,34 @@ class TreeApiController
 {
     public function index(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        $cache = new CachedTreeReport($report, quickrep_cache_db());
-        $generator = new TreeReportGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            $cache = new CachedTreeReport($report, quickrep_cache_db());
+            $generator = new TreeReportGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 
     public function summary(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        // Wrap the report in cache
-        $cache = new CachedTreeReport($report, quickrep_cache_db());
-        $generator = new TreeReportSummaryGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            // Wrap the report in cache
+            $cache = new CachedTreeReport($report, quickrep_cache_db());
+            $generator = new TreeReportSummaryGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 }

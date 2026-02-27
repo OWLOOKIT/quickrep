@@ -12,18 +12,34 @@ class CardsApiController
 {
     public function index(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        $cache = new DatabaseCache($report, quickrep_cache_db());
-        $generator = new ReportGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            $cache = new DatabaseCache($report, quickrep_cache_db());
+            $generator = new ReportGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 
     public function summary(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        // Wrap the report in cache
-        $cache = new DatabaseCache($report, quickrep_cache_db());
-        $generator = new ReportSummaryGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            // Wrap the report in cache
+            $cache = new DatabaseCache($report, quickrep_cache_db());
+            $generator = new ReportSummaryGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 }
