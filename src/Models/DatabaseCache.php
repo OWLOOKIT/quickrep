@@ -122,10 +122,18 @@ class DatabaseCache
         $this->doClearCache = $doClearCache;
     }
 
-    public function dropTable()
+    public function dropTable($table_name, $connectionName)
     {
-        QuickrepDatabase::drop($this->key, $this->connectionName);
-        QuickrepMeta::where('key', $this->key)->delete();
+        $conn = DB::connection($connectionName);
+        $driver = $conn->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return Schema::connection($connectionName)->drop($table_name);
+        }
+
+        // mysql / manticore
+        // Important: use backticks for manticore compatibility
+        return $conn->statement("DROP TABLE IF EXISTS `{$table_name}`");
     }
 
     public function getDoClearCache()
