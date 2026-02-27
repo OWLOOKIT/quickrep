@@ -36,18 +36,22 @@ class QuickrepDatabase
 
     public static function hasTable($table_name, $connectionName)
     {
-        $result = DB::connection($connectionName)->select("SHOW TABLES LIKE '{$table_name}'");
+        $conn = DB::connection($connectionName);
+        $driver = $conn->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return Schema::connection($connectionName)->hasTable($table_name);
+        }
+
+        // mysql/manticore
+        $result = $conn->select("SHOW TABLES LIKE ?", [$table_name]);
         return !empty($result);
-//        return Schema::connection($connectionName)->hasTable($table_name);
     }
 
     public static function connection($connectionName)
     {
         try {
-            if ($connectionName === 'manticore') {
-                return DB::connection(config('quickrep.QUICKREP_DB_CACHE_CONNECTION'));
-            }
-            return DB::connection(config('quickrep.QUICKREP_DB_CONNECTION'));
+            return DB::connection($connectionName);
         } catch (Exception $e) {
             $message = $e->getMessage(
                 ) . " You may have a permissions error with your database user. Please Refer to the Quickrep troubleshooting guide <a href='https://github.com/Owlookit/Quickrep#troubleshooting'>https://github.com/Owlookit/Quickrep#troubleshooting</a>";
@@ -154,26 +158,43 @@ class QuickrepDatabase
     public static function getTableColumnDefinition($table_name, $connectionName, string $sortMethod = 'uksort'): array
     {
         try {
-            $query = "DESCRIBE {$table_name}";
-            $result = self::connection($connectionName)->select($query);
+            $conn = self::connection($connectionName);
+            $driver = $conn->getDriverName();
+
+            if ($driver === 'pgsql') {
+                $query = "
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = ?
+        ORDER BY ordinal_position
+    ";
+                $result = $conn->select($query, [$table_name]);
+            } else {
+                $query = "DESCRIBE {$table_name}";
+                $result = $conn->select($query);
+            }
 
             if ($result) {
                 $column_meta = [];
 
                 foreach ($result as $column) {
-                    if ($column->Field === 'id') {
-                        continue; // Пропускаем id
+                    if ($driver === 'pgsql') {
+                        if ($column->column_name === 'id') {
+                            continue;
+                        }
+                        $column_meta[$column->column_name] = [
+                            'name' => $column->column_name,
+                            'type' => self::basicTypeFromNativeType($column->data_type),
+                        ];
+                    } else {
+                        if ($column->Field === 'id') {
+                            continue;
+                        }
+                        $column_meta[$column->Field] = [
+                            'name' => $column->Field,
+                            'type' => self::basicTypeFromNativeType($column->Type),
+                        ];
                     }
-                    // MySQL, Manticore
-                    $column_meta[$column->Field] = [
-                        'name' => $column->Field,
-                        'type' => self::basicTypeFromNativeType($column->Type),
-                    ];
-//                    // PostgreSQL
-//                    $column_meta[$column->column_name] = [
-//                        'name' => $column->column_name,
-//                        'type' => self::basicTypeFromNativeType($column->data_type),
-//                    ];
                 }
 
                 return self::sortColumnMeta($column_meta, $sortMethod);

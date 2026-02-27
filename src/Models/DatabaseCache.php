@@ -25,27 +25,28 @@ class DatabaseCache
         $this->report = $report;
         $this->timezone = config('app.timezone');
 
-        // by default use the quickrep cache DB
+        // Cache connection (Manticore)
         $this->connectionName = $connectionName ?? quickrep_cache_db();
-
         $this->cache_pdo = QuickrepDatabase::connection($this->connectionName)->getPdo();
-        $this->source_pdo = QuickrepDatabase::connection(config('quickrep.QUICKREP_DB_CONNECTION'))->getPdo();
+
+        // Source connection (PostgreSQL appstats)
+        $this->source_pdo = QuickrepDatabase::connection(quickrep_source_db())->getPdo();
 
         $cacheDatabaseSource = $report->getCacheDatabaseSource();
 
-        if ($cacheDatabaseSource !== null && isset($cacheDatabaseSource['database'], $cacheDatabaseSource['table'])) {
-            $this->connectionName = config('quickrep.QUICKREP_DB_CACHE_CONNECTION');
-
-            try {
-                QuickrepDatabase::configure($this->connectionName);
-            } catch (\Exception $e) {
-                throw new InvalidDatabaseTableException(
-                    "Попытка использовать `{$this->connectionName}`, но БД не существует или доступ запрещен"
-                );
+        if ($cacheDatabaseSource !== null) {
+            // New format: ['connection' => 'manticore', 'table' => '...']
+            if (isset($cacheDatabaseSource['connection'], $cacheDatabaseSource['table'])) {
+                $this->connectionName = (string) $cacheDatabaseSource['connection'];
+                $this->key = (string) $cacheDatabaseSource['table'];
+                $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
             }
-
-            $this->key = $cacheDatabaseSource['table'];
-            $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
+            // Legacy format: ['database' => '...', 'table' => '...'] - database ignored (connection is what matters)
+            elseif (isset($cacheDatabaseSource['database'], $cacheDatabaseSource['table'])) {
+                $this->connectionName = quickrep_cache_db();
+                $this->key = (string) $cacheDatabaseSource['table'];
+                $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
+            }
         } else {
             $this->key = $this->keygen(strtolower($this->report->getClassName()));
             $this->cache_table = QuickrepDatabase::connection($this->connectionName)->table("{$this->key}");
@@ -153,22 +154,8 @@ class DatabaseCache
 
     public function getIndividualQueries()
     {
-        $sql = $this->report->GetSQL();
-        if (!$sql) {
-            return false;
-        }
-
-        $all_queries = [];
-        $sql = is_array($sql) ? $sql : [$sql];
-
-        foreach ($sql as $query) {
-            foreach (explode(";", $query) as $single_query) {
-                if (!empty(trim($single_query))) {
-                    $all_queries[] = trim($single_query);
-                }
-            }
-        }
-        return $all_queries;
+        $queries = $this->report->getSqlStatements();
+        return empty($queries) ? false : $queries;
     }
 
     public function getColumns()
@@ -210,8 +197,9 @@ class DatabaseCache
 
     private function getColumnsFromQuery($query): array
     {
-        // LIMIT 1 для получения структуры колонок и проверки наличия данных
-        $stmt = $this->source_pdo->query($query . " LIMIT 0");
+        $query = $this->normalizeSql($query);
+        $probe = "SELECT * FROM ({$query}) q LIMIT 0";
+        $stmt = $this->source_pdo->query($probe);
         $columnCount = $stmt->columnCount();
 
         $columns = [];
@@ -422,6 +410,12 @@ class DatabaseCache
         } catch (\PDOException $e) {
             throw new \Exception("Ошибка при вставке данных в `$table`: " . $e->getMessage());
         }
+    }
+
+    private function normalizeSql(string $sql): string
+    {
+        $sql = trim($sql);
+        return rtrim($sql, ";\n\r\t ");
     }
 
     public function getLastGenerated()
