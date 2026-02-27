@@ -16,12 +16,20 @@ class GraphApiController
 {
     public function index(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
+        try {
+            $report = $request->buildReport();
 
-        // We use a subclass of the Standard DatabaseCache to enhance the functionality
-        // To cache, not only the "main" table, but the node and link tables as well
-        $cache = new CachedGraphReport($report, quickrep_cache_db());
-        $generatorInterface = new GraphGenerator($cache);
-        return $generatorInterface->toJson();
+            // We use a subclass of the Standard DatabaseCache to enhance the functionality
+            // To cache, not only the "main" table, but the node and link tables as well
+            $cache = new CachedGraphReport($report, quickrep_cache_db());
+            $generatorInterface = new GraphGenerator($cache);
+            return $generatorInterface->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 }
