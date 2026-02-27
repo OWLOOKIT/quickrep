@@ -214,7 +214,8 @@ class DatabaseCache
         for ($i = 0; $i < $columnCount; $i++) {
             $meta = $stmt->getColumnMeta($i);
             [$columnName, $explicitType] = $this->parseColumnName($meta['name']);
-            $columnType = $explicitType ?? $this->mapColumnType($meta['native_type']);
+            $native = $meta['native_type'] ?? $meta['pgsql:oid'] ?? null;
+            $columnType = $explicitType ?? $this->mapColumnType($native ? (string)$native : 'text');
             $columns[] = "`{$columnName}` {$columnType}";
         }
 
