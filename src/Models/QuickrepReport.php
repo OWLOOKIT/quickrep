@@ -12,6 +12,8 @@
 namespace Owlookit\Quickrep\Models;
 
 use DB;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Mockery\Exception;
 use Owlookit\Quickrep\Interfaces\QuickrepReportInterface;
 use Owlookit\Quickrep\Services\SocketService;
@@ -814,6 +816,90 @@ JS;
     public function GetClassName(): string
     {
         return substr(strrchr(get_class($this), '\\'), 1);
+    }
+
+    /**
+     * Return SQL statements for this report in normalized form.
+     * Supports:
+     *  - string
+     *  - array of strings
+     *  - QueryBuilder / EloquentBuilder
+     *  - array of (string|builder)
+     */
+    public function getSqlStatements(): array
+    {
+        $sql = $this->GetSQL();
+        if ($sql === null || $sql === false) {
+            return [];
+        }
+
+        $items = is_array($sql) ? $sql : [$sql];
+        $out = [];
+        foreach ($items as $item) {
+            $raw = $this->normalizeSqlItem($item);
+            foreach (explode(';', $raw) as $single) {
+                $single = trim($single);
+                if ($single !== '') {
+                    $out[] = $single;
+                }
+            }
+        }
+        return $out;
+    }
+
+    protected function normalizeSqlItem(mixed $item): string
+    {
+        if ($item instanceof EloquentBuilder) {
+            $item = $item->getQuery();
+        }
+        if ($item instanceof QueryBuilder) {
+            return $this->toRawSql($item, quickrep_source_db());
+        }
+        if (!is_string($item)) {
+            throw new \InvalidArgumentException('GetSQL() must return string/array or (Eloquent/Query) Builder.');
+        }
+        return $this->normalizeSqlString($item);
+    }
+
+    protected function normalizeSqlString(string $sql): string
+    {
+        $sql = trim($sql);
+        return rtrim($sql, ";\n\r\t ");
+    }
+
+    /**
+     * Convert Builder SQL + bindings into a raw SQL string.
+     * Uses PDO quote for safe embedding (for diagnostics/cache build only).
+     */
+    protected function toRawSql(QueryBuilder $query, string $connectionName): string
+    {
+        $conn = DB::connection($connectionName);
+        $pdo = $conn->getPdo();
+        $sql = $query->toSql();
+        $bindings = $query->getBindings();
+
+        foreach ($bindings as $binding) {
+            $replacement = $this->quoteBinding($pdo, $binding);
+            $sql = preg_replace('/\?/', $replacement, $sql, 1);
+        }
+        return $this->normalizeSqlString($sql);
+    }
+
+    protected function quoteBinding(\PDO $pdo, mixed $binding): string
+    {
+        if ($binding === null) {
+            return 'NULL';
+        }
+        if (is_bool($binding)) {
+            return $binding ? 'TRUE' : 'FALSE';
+        }
+        if ($binding instanceof \DateTimeInterface) {
+            return $pdo->quote($binding->format('Y-m-d H:i:s'));
+        }
+        if (is_int($binding) || is_float($binding)) {
+            return (string) $binding;
+        }
+        return $pdo->quote((string) $binding);
     }
 
 }

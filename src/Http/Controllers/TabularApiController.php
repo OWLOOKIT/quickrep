@@ -22,19 +22,34 @@ class TabularApiController extends AbstractApiController
 {
     public function index(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        $cache = new DatabaseCache($report, quickrep_cache_db());
-        $generator = new ReportGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            $cache = new DatabaseCache($report, quickrep_cache_db());
+            $generator = new ReportGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 
     public function summary(QuickrepRequest $request)
     {
-        $report = $request->buildReport();
-        // Wrap the report in cache
-        $cache = new DatabaseCache($report, quickrep_cache_db());
-        $generator = new ReportSummaryGenerator($cache);
-        return $generator->toJson();
+        try {
+            $report = $request->buildReport();
+            $cache = new DatabaseCache($report, quickrep_cache_db());
+            $generator = new ReportSummaryGenerator($cache);
+            return $generator->toJson();
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
+        }
     }
 
     /**
@@ -45,43 +60,51 @@ class TabularApiController extends AbstractApiController
      */
     public function download(QuickrepRequest $request)
     {
-        // Type can be either 'csv' or 'excel' and we default to excel (shouldn't have to)
-        $fileType = $request->get('download_file_type', 'excel');
-        $report = $request->buildReport();
-        $connectionName = quickrep_cache_db();
-        $cache = new DatabaseCache($report, $connectionName);
-        $summaryGenerator = new ReportSummaryGenerator($cache);
-        $header = $summaryGenerator->runSummary();
-        $lang = $report->getInput('lang') ?? config('app.locale');
-        $header = array_map(function ($element) use ($lang) {
-            // Replace spaces with '_' in the header
-            $title = $element['title_I18n'][(string)$lang] ?: $element['title'];
-            return preg_replace('/\s+/', '_', $title);
-        }, $header);
-        $reportGenerator = new ReportGenerator($cache);
-        $collection = $reportGenerator->getCollection();
+        try {
+            // Type can be either 'csv' or 'excel' and we default to excel (shouldn't have to)
+            $fileType = $request->get('download_file_type', 'excel');
+            $report = $request->buildReport();
+            $connectionName = quickrep_cache_db();
+            $cache = new DatabaseCache($report, $connectionName);
+            $summaryGenerator = new ReportSummaryGenerator($cache);
+            $header = $summaryGenerator->runSummary();
+            $lang = $report->getInput('lang') ?? config('app.locale');
+            $header = array_map(function ($element) use ($lang) {
+                // Replace spaces with '_' in the header
+                $title = $element['title_I18n'][(string)$lang] ?: $element['title'];
+                return preg_replace('/\s+/', '_', $title);
+            }, $header);
+            $reportGenerator = new ReportGenerator($cache);
+            $collection = $reportGenerator->getCollection();
 
-        $reportDescription = $report->GetReportDescriptionI18n()[(string)$lang];
+            $reportDescription = $report->GetReportDescriptionI18n()[(string)$lang];
 
-        // File name download should include MD5 from the contents of getCode #48
-        $reportName = (strlen($report->GetReportName()) > 150) ? substr(
-            $report->GetReportName(),
-            0,
-            150
-        ) : $report->GetReportName();
+            // File name download should include MD5 from the contents of getCode #48
+            $reportName = (strlen($report->GetReportName()) > 150) ? substr(
+                $report->GetReportName(),
+                0,
+                150
+            ) : $report->GetReportName();
 
-        if ($report->getCode()) {
-            $filename = $reportName . '-' . $report->getCode();
-        } else {
-            $filename = $reportName;
-        }
+            if ($report->getCode()) {
+                $filename = $reportName . '-' . $report->getCode();
+            } else {
+                $filename = $reportName;
+            }
 
-        if ($fileType === 'csv') {
-            $filename .= '.csv';
-            return $this->csvResponse($filename, $reportDescription, $header, $collection);
-        } else {
-            $filename .= '.xlsx';
-            return $this->excelResponse($filename, $reportDescription, $header, $collection);
+            if ($fileType === 'csv') {
+                $filename .= '.csv';
+                return $this->csvResponse($filename, $reportDescription, $header, $collection);
+            } else {
+                $filename .= '.xlsx';
+                return $this->excelResponse($filename, $reportDescription, $header, $collection);
+            }
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Reports backend unavailable',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 503);
         }
     }
 
