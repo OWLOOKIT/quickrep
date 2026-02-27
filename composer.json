@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.2",
     "name": "owlookit/quickrep",
     "description": "Quickrep, a PHP reporting engine for Laravel",
     "type": "library",
