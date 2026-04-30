@@ -32,38 +32,44 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
 
     public function getHeader(bool $includeSummary = false)
     {
-        $mapped_header = []; //this is the result from the MapRow function
+        $mapped_header = [];
+
+        // Get the column names and their types from cache metadata.
+        // The order must come from DatabaseCache::getColumns(), which preserves SQL SELECT order.
+        $fields = $this->cache->getColumns();
+        $columns = array_values(array_diff(array_keys($fields), ['id']));
 
         $Table = clone $this->cache->getTable();
-        $columns = array_diff(array_keys($this->cache->getColumns()), ['id']); // except id
         $first_row_of_data = $Table->select($columns)->first();
 
-        // Get the column names and their types (column definitions) directly from the database
-        $fields = $this->cache->getColumns();
-
-        // convert stdClass to array
         $data_row = [];
-        if (!is_null($first_row_of_data)) {
+        $has_data = ! is_null($first_row_of_data);
+
+        if ($has_data) {
+            $firstRowArray = [];
+
             foreach ($first_row_of_data as $key => $value) {
-                $data_row[$key] = $value;  //MapRow needs  at least one row of real data to function properly...
+                $firstRowArray[$key] = $value;
+            }
+
+            foreach ($columns as $column) {
+                $data_row[$column] = $firstRowArray[$column] ?? null;
+            }
+        } else {
+            foreach ($columns as $column) {
+                $data_row[$column] = null;
             }
         }
 
-        $has_data = true;
-        if (count($data_row) == 0) {
-            $data_row = [];
-            $has_data = false;
-        }
-
-        $original_array_key = array_keys($data_row);
+        $original_array_key = $columns;
+        $mapped_header = $columns;
 
         /*
         Run the MapRow once to get the proper column name from the Report
          */
         $first_row_num = 0;
-        if ($has_data) { //this means that the first row had results..
-            //but here we are not sure if MapRow might change column names or add columns or even delete columns..
-            //so we have to run it on the first row of actual data and then see what columns come back..
+
+        if ($has_data) {
             $data_row = $this->cache->MapRow($data_row, $first_row_num);
             $mapped_header = array_keys($data_row);
         }

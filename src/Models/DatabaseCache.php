@@ -61,7 +61,7 @@ class DatabaseCache
         }
 
         try {
-            $this->columns = QuickrepDatabase::getTableColumnDefinition($this->getTableName(), $this->connectionName);
+            $this->columns = $this->getOrderedCacheColumns();
         } catch (\Exception $e) {
             throw new InvalidDatabaseTableException(
                 "Попытка доступа к таблице `{$this->getTableName()}` в БД `{$this->connectionName}`, но она не существует или доступ запрещен"
@@ -189,11 +189,17 @@ class DatabaseCache
         }
 
         $columns = $this->getColumnsFromQuery($firstQuery);
+        $columnOrder = $this->getColumnOrderFromDefinitions($columns);
 
         $createTableSQL = "CREATE TABLE `{$tableName}` (" . implode(", ", $columns) . ") min_prefix_len = '3' min_infix_len = '3' expand_keywords = '1'";
         $this->cache_pdo->exec($createTableSQL);
 
-        $this->columns = QuickrepDatabase::getTableColumnDefinition($this->getTableName(), $this->connectionName);
+        QuickrepMeta::updateOrCreate(
+            ['key' => $tableName, 'meta_key' => 'column_order'],
+            ['meta_value' => json_encode($columnOrder, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]
+        );
+
+        $this->columns = $this->getOrderedCacheColumns($columnOrder);
 
         $this->bulkInsertData($firstQuery, $tableName);
 
@@ -201,6 +207,93 @@ class DatabaseCache
             ['key' => $tableName, 'meta_key' => 'created_at'],
             ['meta_value' => Carbon::now()->toDateTimeString()]
         );
+    }
+
+    private function getOrderedCacheColumns(?array $forcedColumnOrder = null): array
+    {
+        $columns = QuickrepDatabase::getTableColumnDefinition(
+            $this->getTableName(),
+            $this->connectionName,
+            'none'
+        );
+
+        $columnOrder = $forcedColumnOrder ?? $this->getColumnOrderFromMeta();
+
+        if ($columnOrder === null || $columnOrder === []) {
+            return $columns;
+        }
+
+        return $this->applyColumnOrder($columns, $columnOrder);
+    }
+
+    /**
+     * @param array<int, string> $columnDefinitions
+     * @return array<int, string>
+     */
+    private function getColumnOrderFromDefinitions(array $columnDefinitions): array
+    {
+        $order = [];
+
+        foreach ($columnDefinitions as $definition) {
+            if (preg_match('/^`([^`]+)`\s+/u', $definition, $matches)) {
+                if ($matches[1] !== 'id') {
+                    $order[] = $matches[1];
+                }
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    private function getColumnOrderFromMeta(): ?array
+    {
+        $meta = QuickrepMeta::query()
+            ->where('key', $this->getTableName())
+            ->where('meta_key', 'column_order')
+            ->first();
+
+        if ($meta === null || empty($meta->meta_value)) {
+            return null;
+        }
+
+        $decoded = json_decode((string) $meta->meta_value, true);
+
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            $decoded,
+            static fn ($value): bool => is_string($value) && $value !== ''
+        ));
+    }
+
+    /**
+     * @param array<string, array{name:string,type:string}> $columns
+     * @param array<int, string> $columnOrder
+     * @return array<string, array{name:string,type:string}>
+     */
+    private function applyColumnOrder(array $columns, array $columnOrder): array
+    {
+        $ordered = [];
+
+        foreach ($columnOrder as $columnName) {
+            if (array_key_exists($columnName, $columns)) {
+                $ordered[$columnName] = $columns[$columnName];
+            }
+        }
+
+        // Preserve extra columns that may exist in cache table but are absent in saved order.
+        foreach ($columns as $columnName => $columnMeta) {
+            if (! array_key_exists($columnName, $ordered)) {
+                $ordered[$columnName] = $columnMeta;
+            }
+        }
+
+        return $ordered;
     }
 
     private function getColumnsFromQuery($query): array

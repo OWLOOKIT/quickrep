@@ -163,7 +163,7 @@ class QuickrepDatabase
      *
      * @return array
      */
-    public static function getTableColumnDefinition($table_name, $connectionName, string $sortMethod = 'uksort'): array
+    public static function getTableColumnDefinition($table_name, $connectionName, string $sortMethod = 'none'): array
     {
         try {
             $conn = self::connection($connectionName);
@@ -315,20 +315,28 @@ class QuickrepDatabase
 
     private static function sortColumnMeta(array $column_meta, string $method): array
     {
+        if ($method === 'none' || $method === '') {
+            return $column_meta;
+        }
+
         if ($method === 'uksort') {
             uksort($column_meta, 'strnatcmp');
             return $column_meta;
         }
 
-        // По умолчанию используем natsort (создание нового массива)
-        $sorted_meta = [];
-        $keys = array_keys($column_meta);
-        natsort($keys);
-        foreach ($keys as $key) {
-            $sorted_meta[$key] = $column_meta[$key];
+        if ($method === 'natsort') {
+            $sorted_meta = [];
+            $keys = array_keys($column_meta);
+            natsort($keys);
+
+            foreach ($keys as $key) {
+                $sorted_meta[$key] = $column_meta[$key];
+            }
+
+            return $sorted_meta;
         }
 
-        return $sorted_meta;
+        return $column_meta;
     }
 
 }
