@@ -13,7 +13,12 @@ use Owlookit\Quickrep\Console\MakeTabularReportCommand;
 use Owlookit\Quickrep\Console\QuickrepDebugCommand;
 use Owlookit\Quickrep\Console\QuickrepInstallCommand;
 use Owlookit\Quickrep\Console\QuickrepReportCheckCommand;
+use Owlookit\Quickrep\Console\PreparedSourceRefreshCommand;
+use Owlookit\Quickrep\Console\PreparedSourceRefreshStaleCommand;
+use Owlookit\Quickrep\Console\PreparedSourceStatusCommand;
 use Owlookit\Quickrep\Models\QuickrepDatabase;
+use Owlookit\Quickrep\Services\PreparedSourceRefreshService;
+use Owlookit\Quickrep\Services\PreparedSourceReportResolver;
 use Owlookit\Quickrep\Services\PreparedSourceStatusResolver;
 use Owlookit\Quickrep\Services\SocketService;
 
@@ -31,10 +36,11 @@ public function register()
         require_once __DIR__ . '/helpers.php';
 
         $this->app->singleton(PreparedSourceStatusResolver::class, function () {
-
             return new PreparedSourceStatusResolver();
-
         });
+        $this->app->singleton(PreparedSourceStatusResolver::class);
+        $this->app->singleton(PreparedSourceRefreshService::class);
+        $this->app->singleton(PreparedSourceReportResolver::class);
 
         /*
          * Register our quickrep view make command which:
@@ -48,7 +54,10 @@ public function register()
             QuickrepReportCheckCommand::class,
             MakeTabularReportCommand::class,
             MakeCardsReportCommand::class,
-            MakeGraphReportCommand::class
+            MakeGraphReportCommand::class,
+            PreparedSourceStatusCommand::class,
+            PreparedSourceRefreshCommand::class,
+            PreparedSourceRefreshStaleCommand::class,
         ]);
 
         /*

@@ -34,6 +34,10 @@ final readonly class PreparedSourceStatus
         public ?int $ageSeconds,
         public string $freshnessStatus,
         public string $freshnessLabel,
+        public ?string $refreshLockOwner,
+        public ?string $refreshLockExpiresAt,
+        public ?string $lastRefreshTriggeredBy,
+        public bool $isRefreshRunning,
     ) {
     }
 
@@ -67,6 +71,10 @@ final readonly class PreparedSourceStatus
             'age_seconds' => $this->ageSeconds,
             'freshness_status' => $this->freshnessStatus,
             'freshness_label' => $this->freshnessLabel,
+            'refresh_lock_owner' => $this->refreshLockOwner,
+            'refresh_lock_expires_at' => $this->refreshLockExpiresAt,
+            'last_refresh_triggered_by' => $this->lastRefreshTriggeredBy,
+            'is_refresh_running' => $this->isRefreshRunning,
         ];
     }
 }

@@ -68,6 +68,10 @@ final class PreparedSourceStatusResolver
             ageSeconds: null,
             freshnessStatus: 'not_registered',
             freshnessLabel: 'Источник отчёта не зарегистрирован',
+            refreshLockOwner: null,
+            refreshLockExpiresAt: null,
+            lastRefreshTriggeredBy: null,
+            isRefreshRunning: false,
         );
     }
 
@@ -114,6 +118,10 @@ final class PreparedSourceStatusResolver
             ageSeconds: $ageSeconds,
             freshnessStatus: $freshnessStatus,
             freshnessLabel: $freshnessLabel,
+            refreshLockOwner: $source->refresh_lock_owner,
+            refreshLockExpiresAt: $source->refresh_lock_expires_at?->toIso8601String(),
+            lastRefreshTriggeredBy: $source->last_refresh_triggered_by,
+            isRefreshRunning: $source->isRefreshRunning(),
         );
     }
 

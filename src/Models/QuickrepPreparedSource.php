@@ -20,6 +20,7 @@ final class QuickrepPreparedSource extends AbstractQuickrepModel
         'last_successful_refresh_at' => 'datetime',
         'last_refresh_duration_ms' => 'integer',
         'last_source_row_count' => 'integer',
+        'refresh_lock_expires_at' => 'datetime',
         'cache_ttl_seconds' => 'integer',
         'last_cache_built_at' => 'datetime',
         'last_cache_cleared_at' => 'datetime',
@@ -48,5 +49,18 @@ final class QuickrepPreparedSource extends AbstractQuickrepModel
         return Attribute::get(
             fn (): string => trim((string) $this->source_schema) . '.' . trim((string) $this->source_name)
         );
+    }
+
+    public function isRefreshRunning(): bool
+    {
+        return $this->last_refresh_status === 'running'
+            && $this->refresh_lock_expires_at !== null
+            && $this->refresh_lock_expires_at->isFuture();
+    }
+
+    public function isRefreshLockExpired(): bool
+    {
+        return $this->refresh_lock_expires_at === null
+            || $this->refresh_lock_expires_at->isPast();
     }
 }
