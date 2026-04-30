@@ -152,7 +152,7 @@ final class PreparedSourceRefreshService
             ->update([
                 'last_refresh_finished_at' => $finishedAt,
                 'last_successful_refresh_at' => $finishedAt,
-                'last_refresh_duration_ms' => $startedAt->diffInMilliseconds($finishedAt),
+                'last_refresh_duration_ms' => (int) round($startedAt->diffInMilliseconds($finishedAt)),
                 'last_refresh_status' => 'success',
                 'last_refresh_error' => null,
                 'last_source_row_count' => $result->rowCount,
@@ -175,7 +175,7 @@ final class PreparedSourceRefreshService
             ->where('refresh_lock_owner', $lockOwner)
             ->update([
                 'last_refresh_finished_at' => $finishedAt,
-                'last_refresh_duration_ms' => $startedAt->diffInMilliseconds($finishedAt),
+                'last_refresh_duration_ms' => (int) round($startedAt->diffInMilliseconds($finishedAt)),
                 'last_refresh_status' => 'failed',
                 'last_refresh_error' => mb_substr($error, 0, 10000),
                 'refresh_lock_owner' => null,
