@@ -181,4 +181,32 @@ return [
      * Database path where configuration data will be stored, for sockets, etc
      */
     'QUICKREP_CONFIG_DB' => env("QUICKREP_CONFIG_DB", "_quickrep_config"), // legacy (name-only, not connection)
+
+    /**
+     * Prepared Sources Registry
+     *
+     * Registry and freshness metadata live in Quickrep config DB.
+     * By default this is the main application DB, not analytics/statistics DB.
+     */
+    'PREPARED_SOURCES_TABLE' => env('QUICKREP_PREPARED_SOURCES_TABLE', 'quickrep_prepared_sources'),
+
+    /**
+     * When a report implements PreparedSourceReport, summary API will include
+     * prepared source freshness metadata.
+     */
+    'PREPARED_SOURCE_STATUS_ENABLED' => env('QUICKREP_PREPARED_SOURCE_STATUS_ENABLED', true),
+
+    /**
+     * Default freshness metadata for prepared sources.
+     * Individual report registry rows can override these values.
+     */
+    'PREPARED_SOURCE_DEFAULT_EXPECTED_FRESHNESS_SECONDS' => env(
+        'QUICKREP_PREPARED_SOURCE_DEFAULT_EXPECTED_FRESHNESS_SECONDS',
+        1800
+    ),
+
+    'PREPARED_SOURCE_DEFAULT_STALE_AFTER_SECONDS' => env(
+        'QUICKREP_PREPARED_SOURCE_DEFAULT_STALE_AFTER_SECONDS',
+        5400
+    ),
 ];

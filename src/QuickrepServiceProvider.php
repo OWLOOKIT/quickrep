@@ -14,6 +14,7 @@ use Owlookit\Quickrep\Console\QuickrepDebugCommand;
 use Owlookit\Quickrep\Console\QuickrepInstallCommand;
 use Owlookit\Quickrep\Console\QuickrepReportCheckCommand;
 use Owlookit\Quickrep\Models\QuickrepDatabase;
+use Owlookit\Quickrep\Services\PreparedSourceStatusResolver;
 use Owlookit\Quickrep\Services\SocketService;
 
 class QuickrepServiceProvider extends ServiceProvider
@@ -28,6 +29,12 @@ class QuickrepServiceProvider extends ServiceProvider
 public function register()
     {
         require_once __DIR__ . '/helpers.php';
+
+        $this->app->singleton(PreparedSourceStatusResolver::class, function () {
+
+            return new PreparedSourceStatusResolver();
+
+        });
 
         /*
          * Register our quickrep view make command which:

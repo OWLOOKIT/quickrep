@@ -142,6 +142,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 
         $quickrep_cache_db_name = config('quickrep.QUICKREP_CACHE_DB');
         $quickrep_config_db_name = config('quickrep.QUICKREP_CONFIG_DB');
+        $quickrep_config_connection = quickrep_config_db();
 
         // Check if our cache database exists, so we know whether to create it or not.
         try {
@@ -216,7 +217,7 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
             }
         } else {
             $this->info("Running update config migration...");
-            $this->migrateDatabase($quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH);
+            $this->migrateDatabase($quickrep_config_connection, self::CONFIG_MIGRATIONS_PATH);
         }
 
         // The following block spits out an error message that indicates why Quickrep probably couldn't create
@@ -269,31 +270,11 @@ SQL
         QuickrepDatabase::configure($quickrep_cache_db_name);
     }
 
-    public function runQuickrepInitialConfigMigration($quickrep_config_db_name)
+    public function runQuickrepInitialConfigMigration($quickrep_config_connection)
     {
-        // Create the database
-//        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_config_db_name ) ) {
-//            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_config_db_name . ";" ) );
-//        }
-//
-//        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_config_db_name."`;");
+        config(['quickrep.QUICKREP_CONFIG_DB_CONNECTION' => $quickrep_config_connection]);
 
-        DB::connection(config('quickrep.QUICKREP_DB_CACHE_CONNECTION'))->unprepared(
-            <<<SQL
-DO $$ DECLARE
-    r RECORD;
-BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema() AND tablename NOT IN ('audits', 'pulse_aggregates', 'pulse_entries', 'pulse_values')) LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-END $$;
-SQL
-        );
-
-        // Write the database name to the master config
-        config(['quickrep.QUICKREP_CONFIG_DB' => $quickrep_config_db_name]);
-
-        $this->migrateDatabase($quickrep_config_db_name, self::CONFIG_MIGRATIONS_PATH);
+        $this->migrateDatabase($quickrep_config_connection, self::CONFIG_MIGRATIONS_PATH);
     }
 
     public function migrateDatabase($dbname, $path)
