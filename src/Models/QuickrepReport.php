@@ -99,7 +99,7 @@ abstract class QuickrepReport implements QuickrepReportInterface
      * @var array
      */
     private $_parameters = []; // Array wrenches that are "in use" for this report
-        /**
+    /**
      * With this property, the report developer can specify
      * the source for the cache database. You may want to use this
      * if you're data is ending up in a specific, known location, and
@@ -108,7 +108,7 @@ abstract class QuickrepReport implements QuickrepReportInterface
      * @var array|null
      */
     private $_cacheDatabaseSource = null; // Array of sockets that are "currently selected" for the active wrenches
-/**
+    /**
      * @var bool
      *
      * Specify whether the cache is enabled, or not. NOTE: Reports are always
@@ -766,29 +766,15 @@ JS;
      **/
     public function getDataIdentityKey($prefix = ''): string
     {
-        // If the prefix is greater than 31 characters, shorten it to 31
-        $shortenedPrefix = substr($prefix, 0, min(strlen($prefix), 31));
+        $shortenedPrefix = substr((string) $prefix, 0, min(strlen((string) $prefix), 31));
 
-        // Get the report key, can be a maximum of 64 chars
-        //   md5 = 32
-        // + "_" = 1
-        // + min( ReportClassName, 31 )
-        // = 64
+        $sqlStatements = $this->getSqlStatements();
 
-        //when any of the following strings change then it really is a different
-        //ending data output... which means it needs to have a different data cache...
-        $sql = $this->GetSQL();
-        if (!is_array($sql)) {
-            $sql = [$sql]; //make it an array..
-        }
-        $identity_string = strtolower($this->getClassName()) . '-' .
-            $this->getCode(
-            ) . '-' . //note that we do this just to make table and directory listings easier to read.. the data is fully captured in the SQL
-            implode('-', $sql);    //which is why we do not need to add paramaters (etc) to this identity function...
+        $identityString = strtolower($this->getClassName()) . '-' .
+            $this->getCode() . '-' .
+            implode('-', $sqlStatements);
 
-        //lets make this into something short that can be used to make a good table name in the cache.
-        $key = $shortenedPrefix . "_" . md5($identity_string);
-        return $key;
+        return $shortenedPrefix . '_' . md5($identityString);
     }
 
     /**
@@ -852,13 +838,43 @@ JS;
         if ($item instanceof EloquentBuilder) {
             $item = $item->getQuery();
         }
+
         if ($item instanceof QueryBuilder) {
             return $this->toRawSql($item, quickrep_source_db());
         }
-        if (!is_string($item)) {
-            throw new \InvalidArgumentException('GetSQL() must return string/array or (Eloquent/Query) Builder.');
+
+        if (
+            is_object($item)
+            && method_exists($item, 'toSql')
+            && method_exists($item, 'getBindings')
+        ) {
+            return $this->toRawSqlLikeBuilder($item, quickrep_source_db());
         }
+
+        if (!is_string($item)) {
+            throw new \InvalidArgumentException(sprintf(
+                'GetSQL() must return string/array or query builder, [%s] given.',
+                is_object($item) ? $item::class : gettype($item)
+            ));
+        }
+
         return $this->normalizeSqlString($item);
+    }
+
+    protected function toRawSqlLikeBuilder(object $query, string $connectionName): string
+    {
+        $conn = DB::connection($connectionName);
+        $pdo = $conn->getPdo();
+
+        $sql = $query->toSql();
+        $bindings = $query->getBindings();
+
+        foreach ($bindings as $binding) {
+            $replacement = $this->quoteBinding($pdo, $binding);
+            $sql = preg_replace('/\?/', $replacement, $sql, 1);
+        }
+
+        return $this->normalizeSqlString($sql);
     }
 
     protected function normalizeSqlString(string $sql): string

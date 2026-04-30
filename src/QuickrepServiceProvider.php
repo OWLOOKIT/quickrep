@@ -10,6 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use Owlookit\Quickrep\Console\MakeCardsReportCommand;
 use Owlookit\Quickrep\Console\MakeGraphReportCommand;
 use Owlookit\Quickrep\Console\MakeTabularReportCommand;
+use Owlookit\Quickrep\Console\PreparedSourceRegisterCommand;
 use Owlookit\Quickrep\Console\QuickrepDebugCommand;
 use Owlookit\Quickrep\Console\QuickrepInstallCommand;
 use Owlookit\Quickrep\Console\QuickrepReportCheckCommand;
@@ -56,6 +57,7 @@ public function register()
             MakeCardsReportCommand::class,
             MakeGraphReportCommand::class,
             PreparedSourceStatusCommand::class,
+            PreparedSourceRegisterCommand::class,
             PreparedSourceRefreshCommand::class,
             PreparedSourceRefreshStaleCommand::class,
         ]);
