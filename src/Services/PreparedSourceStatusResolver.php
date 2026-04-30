@@ -81,7 +81,7 @@ final class PreparedSourceStatusResolver
         $now = Carbon::now();
 
         $ageSeconds = $lastSuccess !== null
-            ? $lastSuccess->diffInSeconds($now)
+            ? (int) round($lastSuccess->diffInSeconds($now))
             : null;
 
         $staleAfterSeconds = (int) $source->stale_after_seconds;
