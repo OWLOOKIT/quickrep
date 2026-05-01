@@ -36,9 +36,6 @@ public function register()
     {
         require_once __DIR__ . '/helpers.php';
 
-        $this->app->singleton(PreparedSourceStatusResolver::class, function () {
-            return new PreparedSourceStatusResolver();
-        });
         $this->app->singleton(PreparedSourceStatusResolver::class);
         $this->app->singleton(PreparedSourceRefreshService::class);
         $this->app->singleton(PreparedSourceReportResolver::class);
@@ -67,17 +64,10 @@ public function register()
          * Try to load config from the app's config directory first,
          * then load from the package.
          */
-        if (file_exists(config_path('quickrep.php'))) {
-            $this->mergeConfigFrom(
-                config_path('quickrep.php'),
-                'quickrep'
-            );
-        } else {
-            $this->mergeConfigFrom(
-                __DIR__ . '/../config/quickrep.php',
-                'quickrep'
-            );
-        }
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/quickrep.php',
+            'quickrep'
+        );
     }
 
     /**
