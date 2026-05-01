@@ -80,8 +80,10 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
      * Console command signature
      */
     protected $signature = 'quickrep:install
-                    {--database= : Pass in the database name}
-                    {--force : Overwrite existing views and database by default}';
+                    {--database= : Deprecated. Kept for backward compatibility}
+                    {--force : Overwrite published assets/config when supported}
+                    {--config-only : Only run Quickrep config database migrations}
+                    {--skip-database : Skip Quickrep database migrations}';
     /**
      * The console command description.
      *
@@ -91,201 +93,106 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
 
     public function handle()
     {
-        // Tell the system that the installer is running
         Config::set('quickrep:install_api.running', true);
 
-        $this->info("Creating directories....");
-        $this->createDirectories();
-        $this->info("Done.");
+        if (! $this->option('config-only')) {
+            $this->info("Creating directories....");
+            $this->createDirectories();
+            $this->info("Done.");
 
-        $this->info("Exporting views....");
-        $this->exportViews();
-        $this->info("Done.");
+            $this->info("Exporting views....");
+            $this->exportViews();
+            $this->info("Done.");
 
-        $this->info("exporting config....");
-        if (!empty(static::$config_file)) {
-            $this->exportConfig();
-        }
-        $this->info("Done.");
+            $this->info("exporting config....");
+            if (!empty(static::$config_file)) {
+                $this->exportConfig();
+            }
+            $this->info("Done.");
 
-        $this->info("exporting assets....");
-        $this->exportAssets();
-        $this->info("Done.");
+            $this->info("exporting assets....");
+            $this->exportAssets();
+            $this->info("Done.");
 
-        if ($this->config_changes) {
-            $path_parts = pathinfo(self::config_file);
-            $user_config_file = $path_parts['basename'];
-            $config_namespace = $path_parts['filename'];
-            $array = Config::get($config_namespace);
-            $data = var_export($array, 1);
-            if (File::put(config_path($user_config_file), "<?php\n return $data;")) {
-                $this->info("Wrote new config file");
-            } else {
-                $this->error("There were config changes, but there was an error writing config file.");
+            if ($this->config_changes) {
+                $path_parts = pathinfo(self::config_file);
+                $user_config_file = $path_parts['basename'];
+                $config_namespace = $path_parts['filename'];
+                $array = Config::get($config_namespace);
+                $data = var_export($array, 1);
+
+                if (File::put(config_path($user_config_file), "<?php\n return $data;")) {
+                    $this->info("Wrote new config file");
+                } else {
+                    $this->error("There were config changes, but there was an error writing config file.");
+                }
             }
         }
 
-        // Install the Database, and core views
-        $this->info("Installing Quickrep Database");
-        $install_core = $this->installDatabase();
+        if (! $this->option('skip-database')) {
+            $this->info("Installing Quickrep Database");
+            $this->installDatabase();
+        }
 
         $this->info("Installation Successful.");
+
+        return self::SUCCESS;
     }
 
-    protected function installDatabase()
+    protected function installDatabase(): bool
     {
-        $this->info("Setting up cache and config databases...");
+        $this->info('Running Quickrep config migrations...');
 
-        // If there are any config changes from the installation command, we track with this flag in case
-        // we need to write an updated config file.
-        $config_changes = false;
+        $configConnection = quickrep_config_db();
 
-        $quickrep_cache_db_name = config('quickrep.QUICKREP_CACHE_DB');
-        $quickrep_config_db_name = config('quickrep.QUICKREP_CONFIG_DB');
-        $quickrep_config_connection = quickrep_config_db();
+        if (empty($configConnection)) {
+            $this->error('Quickrep config connection is not configured.');
 
-        // Check if our cache database exists, so we know whether to create it or not.
-        try {
-            $cache_db_exists = QuickrepDatabase::doesDatabaseExist($quickrep_cache_db_name);
-        } catch (Exception $e) {
-            $this->error($e->getMessage());
-            exit();
+            return false;
         }
 
-        $create_quickrep_cache_db = true;
-        if ($cache_db_exists === true &&
-            !$this->option('force')) {
-            if (!$this->confirm(
-                "The Quickrep database '" . $quickrep_cache_db_name . "' already exists. Do you want to DROP it and recreate it?"
-            )) {
-                $create_quickrep_cache_db = false;
-            }
-        }
+        $this->info(sprintf(
+            'Using Quickrep config connection [%s].',
+            $configConnection
+        ));
 
+        $this->migrateDatabase($configConnection, self::CONFIG_MIGRATIONS_PATH);
 
-        // See if the config database exists already. If we can't run the query (exception is thrown)
-        // display the error message and exit.
-        try {
-            $config_db_exists = QuickrepDatabase::doesDatabaseExist($quickrep_config_db_name);
-        } catch (Exception $e) {
-            $this->error($e->getMessage());
-            exit();
-        }
-
-        //deleting the centralized configuration of wrenches and sockets that already exist in a database
-        //would be a disaster. We should never overwrite a configuration database.
-        //if someone wants a new one, they can create it themselves and then we will create it if it is missing..
-        $create_quickrep_config_db = true;
-        if ($config_db_exists === true) {
-            $create_quickrep_config_db = false;
-            $this->info("The database $quickrep_config_db_name already exists... using it");
-        }
-
-        $create_cache_failed = false;
-        if ($create_quickrep_cache_db) {
-            try {
-                $this->info("Running intial cache migration...");
-                $this->runQuickrepInitialCacheMigration($quickrep_cache_db_name);
-            } catch (Exception $e) {
-                $create_cache_failed = true;
-            }
-        }
-
-        // The following block spits out an error message that indicates why Quickrep probably couldn't create
-        // the cache database if the DB still doesn't exist after attempting to create it
-        if ($create_cache_failed === true ||
-            !QuickrepDatabase::doesDatabaseExist($quickrep_cache_db_name)) {
-            $message = "Quickrep is unable to create the cache database,\n";
-            $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
-            $default = config('database.statistics');
-            $username = config("database.connections.$default.username");
-            $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
-            $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_cache`.* TO '$username'@'localhost';\n";
-
-            $this->error($message);
-            exit();
-        }
-
-        $create_config_failed = false;
-        // Do we need to create the config database, or do we migrate only?
-        if ($create_quickrep_config_db) {
-            $this->info("Running intial config migration...");
-            try {
-                $this->runQuickrepInitialConfigMigration($quickrep_config_db_name);
-            } catch (Exception $e) {
-                $create_config_failed = true;
-            }
-        } else {
-            $this->info("Running update config migration...");
-            $this->migrateDatabase($quickrep_config_connection, self::CONFIG_MIGRATIONS_PATH);
-        }
-
-        // The following block spits out an error message that indicates why Quickrep probably couldn't create
-        // the config database if the DB still doesn't exist after attempting to create it
-        if ($create_config_failed === true ||
-            !QuickrepDatabase::doesDatabaseExist($quickrep_config_db_name)) {
-            $message = "Quickrep is unable to create the config database,\n";
-            $message .= "Please check the username and password in your .env file's database credentials and try again.\n";
-            $default = config('database.statistics');
-            $username = config("database.connections.$default.username");
-            $message .= "You are trying to connect with dB user `$username`, you may have to run the following commands:\n";
-            $message .= "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, LOCK TABLES ON `_quickrep_config`.* TO '$username'@'localhost';";
-
-            $this->error($message);
-            exit();
-        }
-
-//        Artisan::call('quickrep:debug', [], $this->getOutput());
-
-        $this->info("Done.");
+        $this->info('Done.');
 
         return true;
     }
 
+    /**
+     * @deprecated TopIQ uses Laravel connections and does not create/drop Quickrep databases.
+     */
     public function runQuickrepInitialCacheMigration($quickrep_cache_db_name)
     {
-        // Create the database
-//        if ( QuickrepDatabase::doesDatabaseExist( $quickrep_cache_db_name ) ) {
-//            DB::connection(config('database.statistics'))->statement( DB::connection()->raw( "DROP DATABASE IF EXISTS " . $quickrep_cache_db_name . ";" ) );
-//        }
-//
-//        DB::connection(config('database.statistics'))->statement("CREATE DATABASE IF NOT EXISTS `".$quickrep_cache_db_name."`;");
-
-        DB::connection(config('database.statistics'))->unprepared(
-            <<<SQL
-DO $$ DECLARE
-    r RECORD;
-BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema() AND tablename NOT IN ('audits', 'pulse_aggregates', 'pulse_entries', 'pulse_values')) LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-END $$;
-SQL
-        );
-
-        // Write the database name to the master config
-        config(['quickrep.QUICKREP_CACHE_DB' => $quickrep_cache_db_name]);
-
-        // Configure the database for usage
-        QuickrepDatabase::configure($quickrep_cache_db_name);
+        throw new \LogicException('Legacy Quickrep cache database installation is disabled.');
     }
 
-    public function runQuickrepInitialConfigMigration($quickrep_config_connection)
+    /**
+     * @deprecated TopIQ uses Laravel connections and does not create/drop Quickrep databases.
+     */
+    public function runQuickrepInitialConfigMigration($quickrep_config_db_name)
     {
-        config(['quickrep.QUICKREP_CONFIG_DB_CONNECTION' => $quickrep_config_connection]);
-
-        $this->migrateDatabase($quickrep_config_connection, self::CONFIG_MIGRATIONS_PATH);
+        throw new \LogicException('Legacy Quickrep config database installation is disabled.');
     }
 
-    public function migrateDatabase($dbname, $path)
+    public function migrateDatabase($connectionName, $path): void
     {
-        // unsure the database is configured for usage
-        QuickrepDatabase::configure($dbname);
-
-        Artisan::call('migrate', [
+        $exitCode = Artisan::call('migrate', [
             '--force' => true,
-            '--database' => $dbname,
-            '--path' => $path
-        ]);
+            '--database' => $connectionName,
+            '--path' => $path,
+        ], $this->getOutput());
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException(sprintf(
+                'Quickrep migrations failed for connection [%s] and path [%s].',
+                $connectionName,
+                $path
+            ));
+        }
     }
 }
