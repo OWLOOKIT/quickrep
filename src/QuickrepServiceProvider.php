@@ -79,38 +79,30 @@ public function register()
     public function boot(Router $router)
     {
         if (php_sapi_name() !== 'cli') {
-            // Register the cache database connection if we have a quickrep db,
-            // but only if we're running a web route, not during install commands
             $quickrep_cache_db = quickrep_cache_db();
             if (QuickrepDatabase::doesDatabaseExist($quickrep_cache_db)) {
                 QuickrepDatabase::configure($quickrep_cache_db);
             }
 
-            // Register and configure the config DB
             $quickrep_config_db = quickrep_config_db();
             if (QuickrepDatabase::doesDatabaseExist($quickrep_config_db)) {
                 QuickrepDatabase::configure($quickrep_config_db);
             }
 
-            // Validate that there is only one is_default_socket for a wrench, throw an exception
-            // if there is a wrench with Zero default sockets, or a wrench with more than one
-            // default socket, as this can result unexpected behavior
             if (!$this->is_socket_checked) {
                 $this->is_socket_ok = SocketService::checkIsDefaultSocket();
                 $this->is_socket_checked = true;
             }
         }
 
-        // routes
+        $this->registerApiRoutes();
+        $this->registerWebRoutes();
 
-        // Boot our reports, but only in web mode. We don't care to register reports
-        // during composer package discovery, or installation
         if (php_sapi_name() !== 'cli') {
-            $this->registerApiRoutes();
-            $this->registerWebRoutes();
             $this->registerReports();
-            $this->loadViewsFrom(resource_path('views/quickrep'), 'Quickrep');
         }
+
+        $this->loadViewsFrom(resource_path('views/quickrep'), 'Quickrep');
     }
 
     /**
