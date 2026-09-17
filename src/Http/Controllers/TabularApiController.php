@@ -241,14 +241,13 @@ class TabularApiController extends AbstractApiController
                     $j = 0;
                     foreach ($collection[$i] as $k => $v) {
                         if (is_numeric($v) && strlen((string)$v) >= 10) {
-                            $sheet->setCellValueExplicitByColumnAndRow(
-                                $j + 1,
-                                $i + 2,
+                            $sheet->setCellValueExplicit(
+                                [$j + 1, $i + 2],
                                 (string)$v,
                                 \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
                             );
                         } else {
-                            $sheet->setCellValueByColumnAndRow($j + 1, $i + 2, trim(strip_tags($v)));
+                            $sheet->setCellValue([$j + 1, $i + 2], trim(strip_tags($v)));
                         }
                         $j++;
                     }
