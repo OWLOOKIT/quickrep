@@ -173,17 +173,21 @@ class TabularApiController extends AbstractApiController
                 $sheet->getPageSetup()
                     ->setPaperSize(PageSetup::PAPERSIZE_A4);
 
-                $drawing = new HeaderFooterDrawing();
-                $drawing->setName('logo');
-                $drawing->setPath('./storage/assets/logo.png');
-                $drawing->setHeight(32);
-                $sheet->getHeaderFooter()->addImage(
-                    $drawing,
-                    HeaderFooter::IMAGE_HEADER_RIGHT
-                );
+                $logoPath = storage_path('assets/logo.png');
+                $hasLogo = is_file($logoPath) && is_readable($logoPath);
+                if ($hasLogo) {
+                    $drawing = new HeaderFooterDrawing();
+                    $drawing->setName('logo');
+                    $drawing->setPath($logoPath);
+                    $drawing->setHeight(32);
+                    $sheet->getHeaderFooter()->addImage(
+                        $drawing,
+                        HeaderFooter::IMAGE_HEADER_RIGHT
+                    );
+                }
 
                 $sheet->getHeaderFooter()
-                    ->setOddHeader('&C&H&"Verdana,Trebuchet"&14' . $reportDescription . '&R&G');
+                    ->setOddHeader('&C&H&"Verdana,Trebuchet"&14' . $reportDescription . ($hasLogo ? '&R&G' : ''));
                 $sheet->getHeaderFooter()
                     ->setOddFooter(
                         '&L&B' . $spreadsheet->getProperties()->getTitle() . ' | ' . Carbon::now() . '&RСтр. &P из &N'
@@ -247,7 +251,7 @@ class TabularApiController extends AbstractApiController
                                 \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
                             );
                         } else {
-                            $sheet->setCellValue([$j + 1, $i + 2], trim(strip_tags($v)));
+                            $sheet->setCellValue([$j + 1, $i + 2], is_string($v) ? trim(strip_tags($v)) : $v);
                         }
                         $j++;
                     }

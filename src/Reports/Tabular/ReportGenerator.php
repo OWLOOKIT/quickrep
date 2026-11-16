@@ -346,7 +346,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $paging->setCollection($paging->getCollection()->map(function ($value, $key) use ($Report) {
             $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);
-            return $this->arrayToObject(array_map(fn($v) => mb_convert_encoding($v, 'UTF-8', 'UTF-8'), $mapped_row));
+            return $this->arrayToObject(array_map(fn($v) => is_string($v) ? mb_convert_encoding($v, 'UTF-8', 'UTF-8') : $v, $mapped_row));
         }));
 
         $reportSummary = new ReportSummaryGenerator($this->cache);
@@ -413,7 +413,7 @@ class ReportGenerator extends AbstractGenerator implements GeneratorInterface
         $results->transform(function ($value, $key) use ($Report) {
             $value_array = $this->objectToArray($value);
             $mapped_row = $Report->MapRow($value_array, $key);
-            $mapped_and_encoded = array_map(fn($v) => mb_convert_encoding($v, 'UTF-8', 'UTF-8'), $mapped_row);
+            $mapped_and_encoded = array_map(fn($v) => is_string($v) ? mb_convert_encoding($v, 'UTF-8', 'UTF-8') : $v, $mapped_row);
             return $this->arrayToObject($mapped_and_encoded);
         });
 
