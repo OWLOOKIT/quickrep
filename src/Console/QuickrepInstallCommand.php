@@ -56,7 +56,6 @@ class QuickrepInstallCommand extends AbstractQuickrepInstallCommand
         '/vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js' => '/core/bootstrap/bootstrap.bundle.min.js',
         '/vendor/twbs/bootstrap/dist/css/bootstrap.min.css' => '/core/bootstrap/bootstrap.min.css',
         '/vendor/components/jquery/jquery.min.js' => '/core/js/jquery.min.js',
-        '/vendor/moment/moment/min/moment.min.js' => '/core/js/moment.min.js',
         '/vendor/fortawesome/font-awesome/webfonts' => '/core/font-awesome/webfonts',
         '/vendor/fortawesome/font-awesome/css/all.min.css' => '/core/font-awesome/css/all.min.css',
         '/vendor/fortawesome/font-awesome/js/all.min.js' => '/core/font-awesome/js/all.min.js',
